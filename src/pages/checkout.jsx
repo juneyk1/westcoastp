@@ -1,57 +1,57 @@
 import React, { useState } from 'react';
 
+
+
 export default function Checkout() {
   const [items, setItems] = useState([
     { 
       sku: 1, 
-      name: 'Gloves', 
-      price: 2.99, 
+      name: 'Gloves',
+      ogPrice: 11.99, 
+      price: 9.99, 
       quantity: 1, 
       image: 'src/assets/gloves.png',
-      seller: 'June',
-      inStock: true,
-      deliveryDate: 'Tuesday, February 2'
+      seller: "June",
+      description: 'Place holder description',
+      shippingDate: 'September 17th',
+      isShippingDateEstimated: true
     },
     { 
       sku: 2, 
       name: 'Stethoscope', 
-      price: 40.99, 
+      ogPrice: 70.99,
+      price: 49.99, 
       quantity: 1, 
       image: 'src/assets/stethoscope.png',
       seller: 'Sophia',
-      inStock: true,
-      deliveryDate: 'Wednesday, February 3'
+      description: 'Placeholder description',
+      shippingDate: 'May 5th',
+      isShippingDateEstimated: true
     },
     { 
-        sku: 3, 
-        name: 'Syringe', 
-        price: 9.99, 
-        quantity: 1, 
-        image: 'src/assets/syringe.png',
-        seller: 'Zach',
-        inStock: true,
-        deliveryDate: 'Wednesday, February 3'
-      },
-      { 
-        sku: 4, 
-        name: 'Band-aids', 
-        price: 29.99, 
-        quantity: 1, 
-        image: 'src/assets/bandAids.png',
-        seller: 'Dr. Klefstad',
-        inStock: false,
-        deliveryDate: 'Wednesday, February 3'
-      },
-      { 
-        sku: 5, 
-        name: 'Ozempic', 
-        price: 19.99, 
-        quantity: 1, 
-        image: 'src/assets/ozempic.png',
-        seller: 'Dr. Klefstad',
-        inStock: true,
-        deliveryDate: 'Wednesday, February 3'
-      }
+      sku: 3, 
+      name: 'Band-Aids (4 pack)', 
+      ogPrice:6.99,
+      price: 3.99, 
+      quantity: 1, 
+      image: 'src/assets/bandAids.png',
+      seller: 'Zach',
+      description: 'Placeholder description',
+      shippingDate: 'April 4th',
+      isShippingDateEstimated: true
+    },
+    { 
+      sku: 4, 
+      name: 'Ozempic',
+      ogPrice: 27.99, 
+      price: 20.99, 
+      quantity: 1, 
+      image: 'src/assets/ozempic.png',
+      seller: 'Miguel',
+      description: 'Placeholder description',
+      shippingDate: 'June 21st',
+      isShippingDateEstimated: true
+    }
   ]);
 
   function calculateSubtotal() {
@@ -61,141 +61,130 @@ export default function Checkout() {
     }
     return subtotal;
   }
-
+  function calculateOGSubtotal() {
+    let subtotal = 0; //Creates a subtotal
+    for (const item of items) { //Loops through all items
+      subtotal += item.ogPrice * item.quantity; // Adds all them toghter to the price
+    }
+    return subtotal;
+  }
+  
+  
   const subtotal = calculateSubtotal();
-  const finalTotal = (subtotal * 1.08).toFixed(2);
-  
+  const salesTax = subtotal * 0.08;
+  const grandTotal = (subtotal + salesTax).toFixed(2);
 
-  
+  const OGsubtotal = calculateOGSubtotal();
+  const OGsalesTax = OGsubtotal * 0.08;
+  const OGgrandTotal = (OGsubtotal + OGsalesTax).toFixed(2);
+
   function handleQuantityChange(itemSku, newQuantity) {
-  // This function changes the quantity of a specific item.
-  // 'itemId' is the unique ID of the item we want to change.
-  // 'newQuantity' is the new quantity we want to set.
-
-  if (newQuantity < 0) {
-    return;
+    if (newQuantity < 0) return;
+    setItems(items.map(item => 
+      item.sku === itemSku ? { ...item, quantity: newQuantity } : item
+    ));
   }
 
-  // We're going to create a new list of items with the updated quantity.
-  const updatedItems = []; 
 
-
-  for (let i = 0; i < items.length; i++) {
-    const currentItem = items[i];
-
-    if (currentItem.sku === itemSku) {
-      const updatedItem = { ...currentItem, quantity: newQuantity }; 
-      // Dupes object, copying prop. from currentItem modfying quantity
-      updatedItems.push(updatedItem);
-    } else {
-      updatedItems.push(currentItem);
-    }
-  }
-  setItems(updatedItems);
-}
-
-  function handleRemoveItem(sku) {
-    // This function removes an item from the cart based on its sku
-    // 'sku' is the sku of the item to be removed.
-
-  const updatedItems = []; // List of things we are going to keep
-
-  for (let i = 0; i < items.length; i++) {
-    const currentItem = items[i];
-
-    if (currentItem.sku !== sku) {
-      updatedItems.push(currentItem);
-    }
-  }
-
-  setItems(updatedItems); // Update the cart
-  }
 
   return (
-<div className=" bg-gray-50">
-  <div className="w-full">
+    <div className="max-w-6xl mx-auto p-6 py-24">
+    <h2 className="text-3xl font-medium mb-6">Your Cart ({items.length} items)</h2>
+    
     <div className="grid grid-cols-12 gap-8">
-      {/* Main Cart Section */}
-      <div className="col-span-12 lg:col-span-8 p-6">
-        <h1 className="text-5xl font-normal text-gray-900 px-13 py-8 mb-4">Shopping Cart</h1>
-        <div className="border-dashed">
+      <div className="col-span-12 lg:col-span-8">
+        <div className="space-y-6">
           {items.map((item) => (
-            <div key={item.id} className="py-4 px-8 border-t border-gray-200 first:border-t-0">
-              <div className="flex gap-4">
-                <div className="w-32 flex-shrink-0 ">
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
-                    className="w-full h-auto "
-                  />
+            <div key={item.sku} className="flex items-start gap-4 pb-6 border-b border-gray-200">
+              <div className="w-24 h-24">
+                <img 
+                  src={item.image}
+                  alt={item.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              <div className="flex-grow">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium text-lg">{item.name}</h3>
+                    {item.description && (
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                    )}
+                    {item.shippingDate && (
+                      <p className="text-sm text-green-800">
+                        {item.isShippingDateEstimated ? 'Estimated ' : ''}
+                        Ship Date: {item.shippingDate}
+                      </p>
+                    )}
+                    {item.seller && (
+                      <p className="text-sm text-gray-500">{item.seller}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center"> {/* items-center for vertical alignment */}
+                  <strike className="text-lg font-medium mr-2 text-gray-500">${item.ogPrice}</strike> {/* Add margin for spacing */}
+                  <p className="text-lg font-medium">${item.price.toFixed(2)}</p>
                 </div>
-                <div className="flex-grow">
-                  <h3 className="text-lg font-medium mb-1">{item.name}</h3>
-                  {item.inStock ? (
-          <p className="text-sm text-green-600 mb-1">In Stock</p>
-        ) : (
-          <p className="text-sm text-red-600 mb-1">Out Of Stock</p>
-        )}
-                  <p className="text-xs text-gray-500 mb-2">Ships from and sold by {item.seller}</p>
-                  <p className="text-xs text-gray-500 mb-4">Delivery: {item.deliveryDate}</p>
-                  
-                  <div className="flex items-center space-x-4 text-white">
-                    <select
-                      value={item.quantity}
-                      onChange={(e) => handleQuantityChange(item.sku, parseInt(e.target.value))}
-                      className="border border-gray-300 rounded p-1 text-sm bg-gray-50 text-black"
+                </div>
+                
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="inline-flex items-center border rounded">
+                    <button 
+                      onClick={() => handleQuantityChange(item.sku, Math.max(0, item.quantity - 1))}
+                      className="px-2 py-1 hover:bg-gray-100"
                     >
-                      {[...Array(90)].map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          Qty: {i + 1}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleRemoveItem(item.sku)}
-                      className="text-xs text-black hover:text-red-600 hover:underline"
+                      −
+                    </button>
+                    <span className="px-4 py-1 border-x min-w-[40px] text-center">
+                      {item.quantity}
+                    </span>
+                    <button 
+                      onClick={() => handleQuantityChange(item.sku, item.quantity + 1)}
+                      className="px-2 py-1 hover:bg-gray-100"
                     >
-                      Delete
+                    +  
                     </button>
                   </div>
-                </div>
-                <div className="w-24 text-right">
-                  <span className="text-lg font-medium">${item.price.toFixed(2)}</span>
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <div className="text-right py-4 text-lg text-black">
-          Subtotal ({items.reduce((sum, item) => sum + item.quantity, 0)} items):
-          <span className="font-bold ml-2">${subtotal.toFixed(2)}</span>
-        </div>
       </div>
 
-      {/* Checkout Sidebar */}
-      <div className="col-span-12 lg:col-span-4 p-6 py-38">
-        <div className="bg-white p-6 border border-gray-200 sticky top-6">
-          <p className="text-green-600 text-sm mb-4">
-            Your order qualifies for FREE Shipping
-          </p>
-          <div className="space-y-2 mb-4">
-            <p className="text-lg text-black">
-              Subtotal ({items.reduce((sum, item) => sum + item.quantity, 0)} items):
-              <span className="font-bold ml-1">${subtotal.toFixed(2)}</span>
-            </p>
-            <p className="text-lg text-black">
-              Final Total
-              <span className="font-bold ml-1">${finalTotal}</span>
-            </p> 
-            <p className='text-emerald-400 text-xl'>Total Amount saved $10 </p>
+      <div className="col-span-12 lg:col-span-4">
+        <div className="bg-gray-50 p-6 rounded-lg">
+          <div className="space-y-4">
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span>${subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Sales Tax:</span>
+              <span>${salesTax.toFixed(2)}</span>
+            </div>
+            <div className="pt-4 border-t flex justify-between font-medium">
+              <span>Grand total:</span>
+              <span>${grandTotal}</span>
+            </div>
+            <div className="flex justify-between font-medium">
+              <span>Savings:</span>
+              <span>${OGgrandTotal - grandTotal}</span>
+            </div>
           </div>
-          <button className="w-full bg-yellow-400 hover:bg-yellow-500 text-sm font-medium py-2 px-4 rounded transition-colors mb-2">
-            Proceed to checkout
-          </button>
+          
+          <div className="mt-6">
+            <p className="text-sm text-green-600 mb-4">
+              Congrats, you're eligible for Free Shipping
+            </p>
+            <button className="w-full bg-black text-white py-3 rounded hover:bg-gray-800">
+              Check out
+            </button>
+          </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-  );
+
+);
 }
