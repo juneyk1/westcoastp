@@ -4,6 +4,9 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Checkout from './pages/checkout'
 import Landing from './pages/Landing'
 import ProductInfo from './pages/ProductInfo';
+import SubscriptionForm from "./pages/Subscription";
+import Login from "./pages/Login";
+import CreateAccount from "./pages/CreateAccount";
 export default function App() {
   return (
     <Router>
@@ -13,6 +16,8 @@ export default function App() {
         <Route path="/checkout" element={<Checkout />} />
       </Routes>
     </Router>
+    //<CreateAccount />
+    //<SubscriptionForm/>
   );
 }
 
