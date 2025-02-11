@@ -1,0 +1,12 @@
+@import "tailwindcss";
+.formDivs{
+    position: fixed;
+    top: 15rem;
+    width: 12rem;
+    height: 5rem;
+    max-width: 100vw;
+    max-height: 100dvh;
+    left: 0;
+    right: 0;
+    margin: auto;
+}
