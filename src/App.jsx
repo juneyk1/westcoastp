@@ -7,6 +7,8 @@ import ProductInfo from './pages/ProductInfo';
 import SubscriptionForm from "./pages/Subscription";
 import Login from "./pages/Login";
 import CreateAccount from "./pages/CreateAccount";
+import LoginPage from "./pages/LoginPage"
+import SignUp from "./pages/signUp"
 export default function App() {
   return (
     <Router>
@@ -14,6 +16,9 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/product-info" element={<ProductInfo />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/login" element={<LoginPage />} />        
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/subscription" element={<SubscriptionForm/>} />
       </Routes>
     </Router>
     //<CreateAccount />
