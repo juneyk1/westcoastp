@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './ProductInfo.css';
+import { useNavigate } from "react-router-dom";
 
 const ProductInfo = () => {
     // mock data
@@ -18,6 +19,12 @@ const ProductInfo = () => {
         setCartMessage('Product added to cart!')
     };
 
+    const navigate = useNavigate();
+
+    const handleCartClick = () => {
+        navigate("/checkout");
+    };
+
     return (
         <div className="product-info-page">
             <nav className="navbar">
@@ -29,7 +36,7 @@ const ProductInfo = () => {
                 <div className="nav-right">
                 <span>Account</span>
                 <span>Login</span>
-                <span>Bag</span>
+                <span onClick={handleCartClick}>Bag</span>
                 </div>
             </nav>
             <div className="product-container">

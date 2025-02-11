@@ -1,6 +1,17 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const Landing = () => {
+  const navigate = useNavigate();
+
+  const handleProductClick = () => {
+    navigate("/product-info");
+  };
+
+  const handleCartClick = () => {
+    navigate("/checkout");
+  };
+
   return (
     <div>
       <nav className="navbar">
@@ -12,11 +23,11 @@ const Landing = () => {
         <div className="nav-right">
           <span>Account</span>
           <span>Login</span>
-          <span>Bag</span>
+          <span onClick={handleCartClick}>Bag</span>
         </div>
       </nav>
 
-      <div className="product-container">
+      <div className="product-container" onClick={handleProductClick}>
         {[...Array(5)].map((_, index) => (
           <div
             key={index}
