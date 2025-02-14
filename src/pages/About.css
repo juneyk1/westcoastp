@@ -1,0 +1,26 @@
+  .about-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: Arial, sans-serif; 
+  }
+  .about-info {
+    display: flex;
+    gap: 20px; 
+    text-align: left;
+    padding-top: 40px;
+  }
+  .our-name {
+    flex: 1;
+    font-size: 58px;
+    align-self: center;
+  }
+  .about-us {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .about-us p {
+    margin: 0; 
+  }

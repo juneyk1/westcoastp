@@ -1,13 +1,4 @@
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 30px;
-    font-size: 18px;
-  }
-  .nav-left, .nav-right {
-    display: flex;
-    gap: 20px;
-  }
+
   .product-description-page {
     max-width: 800px;
     margin: 0 auto;

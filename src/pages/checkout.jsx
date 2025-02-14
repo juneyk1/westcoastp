@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Header from './header'
 
 
 
@@ -89,6 +90,7 @@ export default function Checkout() {
 
   return (
     <div className="max-w-6xl mx-auto p-6 py-24">
+      <Header/>
     <h2 className="text-3xl font-medium mb-6">Your Cart ({items.length} items)</h2>
     
     <div className="grid grid-cols-12 gap-8">

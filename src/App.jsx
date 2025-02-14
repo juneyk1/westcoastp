@@ -5,10 +5,12 @@ import Checkout from './pages/checkout'
 import Landing from './pages/Landing'
 import ProductInfo from './pages/ProductInfo';
 import SubscriptionForm from "./pages/Subscription";
-import Login from "./pages/Login";
-import CreateAccount from "./pages/CreateAccount";
-import LoginPage from "./pages/LoginPage"
-import SignUp from "./pages/signUp"
+//import Login from "./pages/Login";
+//import CreateAccount from "./pages/CreateAccount";
+import LoginPage from "./pages/LoginPage";
+import SignUp from "./pages/signUp";
+import About from "./pages/About";
+
 export default function App() {
   return (
     <Router>
@@ -19,6 +21,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />        
         <Route path="/signup" element={<SignUp />} />
         <Route path="/subscription" element={<SubscriptionForm/>} />
+        <Route path="/about" element={<About/>} />
       </Routes>
     </Router>
     //<CreateAccount />

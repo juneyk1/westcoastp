@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import Header from "./header";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -8,25 +9,9 @@ const Landing = () => {
     navigate("/product-info");
   };
 
-  const handleCartClick = () => {
-    navigate("/checkout");
-  };
-
   return (
     <div>
-      <nav className="navbar">
-        <div className="nav-left">
-          <span>About</span>
-          <span>Shop</span>
-        </div>
-        <div className="logo">MADO</div>
-        <div className="nav-right">
-          <span>Account</span>
-          <span>Login</span>
-          <span onClick={handleCartClick}>Bag</span>
-        </div>
-      </nav>
-
+      <Header/>
       <div className="product-container" onClick={handleProductClick}>
         {[...Array(5)].map((_, index) => (
           <div
@@ -42,26 +27,6 @@ const Landing = () => {
 export default Landing;
 
 const styles = `
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-  }
-  .navbar {
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 30px;
-    font-size: 18px;
-  }
-  .nav-left, .nav-right {
-    display: flex;
-    gap: 20px;
-  }
-  .logo {
-    font-size: 28px;
-    font-weight: bold;
-  }
   .product-container {
     display: flex;
     justify-content: center;

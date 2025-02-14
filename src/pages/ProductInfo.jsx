@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './ProductInfo.css';
 import { useNavigate } from "react-router-dom";
+import Header from './header'
 
 const ProductInfo = () => {
     // mock data
@@ -21,24 +22,9 @@ const ProductInfo = () => {
 
     const navigate = useNavigate();
 
-    const handleCartClick = () => {
-        navigate("/checkout");
-    };
-
     return (
         <div className="product-info-page">
-            <nav className="navbar">
-                <div className="nav-left">
-                <span>About</span>
-                <span>Shop</span>
-                </div>
-                <div className="logo">MADO</div>
-                <div className="nav-right">
-                <span>Account</span>
-                <span>Login</span>
-                <span onClick={handleCartClick}>Bag</span>
-                </div>
-            </nav>
+            <Header/>
             <div className="product-container">
                 <div className="product-image">
                     <img 
@@ -90,87 +76,3 @@ const ProductInfo = () => {
 }
 
 export default ProductInfo;
-
-// const styles = `
-// .navbar {
-//     display: flex;
-//     justify-content: space-between;
-//     padding: 15px 30px;
-//     font-size: 18px;
-//   }
-//   .nav-left, .nav-right {
-//     display: flex;
-//     gap: 20px;
-//   }
-//   .product-description-page {
-//     max-width: 800px;
-//     margin: 0 auto;
-//     padding: 20px;
-//     font-family: Arial, sans-serif;
-//   }
-//   .product-image {
-//     flex-shrink: 0;
-//     width: 350px;
-//   }
-//   .product-more{
-//     max-width: 600px;
-//     text-align: left;
-//   }
-//   .product-details {
-//     flex: 1;
-//     display: flex;
-//     flex-direction: column;
-//     justify-content: space-between;
-//     text-align: left;
-//   }
-//   .add-to-cart {
-//     background-color: #ADD8E6;
-//     color: black;
-//     border: none;
-//     padding: 10px 15px;
-//     font-size: 18px;
-//     cursor: pointer;
-//     margin-top: 10px;
-//     border-radius: 20px;
-//   }
-//   .quantity {
-//     text-align: left;
-//     flex: 1;
-//     display: flex;
-//     padding: 20px;
-//     margin-left: 20px;
-//     gap: 10px;
-//   }
-//   .qty-button {
-//     background-color: #ADD8E6;
-//     color: black;
-//     border: none;
-//     font-size: 20px;
-//     padding: 2px 10px;
-//     cursor: pointer;
-//     border-radius: 100%;
-//   }
-//   .related-products {
-//     justify-content: left;
-//     margin-left: 50; 
-//     margin-right: auto;
-//   }
-//   .relproduct-container {
-//     display: flex;
-//     justify-content: left;
-//     margin-top: 10px;
-//     gap: 20px;
-//     overflow-x: auto;
-//     padding: 20px;
-//   }
-//   .product {
-//     width: 150px;
-//     height: 200px;
-//     background: lightgray;
-//     border-radius: 10px;
-//   }`;
-
-// const styleSheet = document.createElement("style");
-// styleSheet.type = "text/css";
-// styleSheet.innerText = styles;
-// document.head.appendChild(styleSheet);
