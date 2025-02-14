@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 
+import { useNavigate } from "react-router-dom";
+import Landing from './Landing';
+
 const SubscriptionPage = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -22,6 +27,7 @@ const SubscriptionPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
+    navigate("/");
   };
 
   return (
