@@ -16,6 +16,10 @@ const Header = () => {
     navigate("/");
   }
 
+  const handleAccountClick = () => {
+    navigate("/Account");
+  }
+
   return (
     <div>
       <nav className="navbar">
@@ -25,7 +29,7 @@ const Header = () => {
         </div>
         <div onClick={handleShopClick} className="logo">MADO</div>
         <div className="nav-right">
-          <span>Account</span>
+          <span onClick ={handleAccountClick}>Account</span>
           <span onClick={handleCartClick}>Bag</span>
         </div>
       </nav>

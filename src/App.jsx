@@ -10,6 +10,7 @@ import SubscriptionForm from "./pages/Subscription";
 import LoginPage from "./pages/LoginPage";
 import SignUp from "./pages/signUp";
 import About from "./pages/About";
+import Account from  "./pages/Account";
 
 export default function App() {
   return (
@@ -22,9 +23,9 @@ export default function App() {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/subscription" element={<SubscriptionForm/>} />
         <Route path="/about" element={<About/>} />
+        <Route path="/Account" element={<Account/>} />
       </Routes>
     </Router>
-    //<CreateAccount />
-    //<SubscriptionForm/>
+    //<Account/>
   );
 }
