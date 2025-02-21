@@ -171,7 +171,7 @@ export default function Checkout() {
             </div>
             <div className="flex justify-between font-medium">
               <span>Savings:</span>
-              <span>${OGgrandTotal - grandTotal}</span>
+              <span>${(OGgrandTotal - grandTotal).toFixed(2)}</span>
             </div>
           </div>
           
