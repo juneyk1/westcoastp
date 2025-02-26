@@ -27,7 +27,7 @@ const SubscriptionPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
-    navigate("/");
+    navigate("/checkout-response");
   };
 
   return (
