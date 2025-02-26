@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Header from './header'
-
+import { useNavigate } from "react-router-dom";
 
 
 export default function Checkout() {
+  const navigate = useNavigate();
+
   const [items, setItems] = useState([
     { 
       sku: 1, 
@@ -179,7 +181,8 @@ export default function Checkout() {
             <p className="text-sm text-green-600 mb-4">
               Congrats, you're eligible for Free Shipping
             </p>
-            <button className="w-full bg-black text-white py-3 rounded hover:bg-gray-800">
+            <button onClick={() => navigate("/subscribe")}
+              className="w-full bg-black text-white py-3 rounded hover:bg-gray-800">
               Check out
             </button>
           </div>

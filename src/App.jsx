@@ -12,6 +12,7 @@ import SignUp from "./pages/signUp";
 import About from "./pages/About";
 import Account from "./pages/Account";
 import Appendices from "./pages/Appendices";
+import CheckoutResponse from "./pages/checkout-response";
 export default function App() {
   return (
     <Router>
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/about" element={<About />} />
         <Route path="/Account" element={<Account />} />
         <Route path="/notices" element={<Appendices />} />
+        <Route path="/checkout-response" element={<CheckoutResponse />} />
       </Routes>
     </Router>
     //<Account/>

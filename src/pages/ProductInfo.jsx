@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Header from './header';
 import "./ProductInfo.css";
 import { useNavigate } from "react-router-dom";
 const ProductInfo = () => {
@@ -27,18 +28,7 @@ const ProductInfo = () => {
 
   return (
     <div className="product-info-page">
-      <nav className="navbar">
-        <div className="nav-left">
-          <span>About</span>
-          <span>Shop</span>
-        </div>
-        <div className="logo">MADO</div>
-        <div className="nav-right">
-          <span>Account</span>
-          <span>Login</span>
-          <span onClick={handleCartClick}>Bag</span>
-        </div>
-      </nav>
+      <Header />
       <div className="product-container">
         <div className="product-image">
           <img src={product.image} alt="Product" />
