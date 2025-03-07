@@ -1,24 +1,62 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./header";
+import supabase from "../supabaseClient";
 
 const Landing = () => {
   const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+
+  // Fetch products from Supabase on component mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("name, description, image");
+      
+      if (error) {
+        console.error("Error fetching products:", error);
+      } else {
+        setProducts(data);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const handleProductClick = () => {
+    // Navigate to a product info page 
     navigate("/product-info");
   };
 
   return (
     <div>
-      <Header/>
+      <Header />
+      
       <div className="product-container" onClick={handleProductClick}>
-        {[...Array(5)].map((_, index) => (
-          <div
-            key={index}
-            className={`product ${index === 1 ? "selected" : ""}`}
-          ></div>
-        ))}
+        {products.length > 0 ? (
+          products.map((product, index) => (
+            <div
+              key={product.id}
+              className={`product ${index === 1 ? "selected" : ""}`}
+            >
+              {/* Render the product image */}
+              <img
+                src={product.image}
+                alt={product.name}
+                className="product-image"
+              />
+              {/* display more product details if needed:
+                  <h2>{product.name}</h2>
+                  <p>ASP: {product.ASP}</p>
+                  <p>Target: {product.target}</p>
+                  <p>{product.description}</p>
+              */}
+            </div>
+          ))
+        ) : (
+          <p>No products found.</p>
+        )}
       </div>
     </div>
   );
@@ -26,6 +64,9 @@ const Landing = () => {
 
 export default Landing;
 
+/* ----------------------------------
+   Dynamically inject your CSS styles
+---------------------------------- */
 const styles = `
   .product-container {
     display: flex;
@@ -39,6 +80,13 @@ const styles = `
     width: 150px;
     height: 200px;
     background: lightgray;
+    border-radius: 10px;
+    position: relative;
+  }
+  .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     border-radius: 10px;
   }
   .selected {
