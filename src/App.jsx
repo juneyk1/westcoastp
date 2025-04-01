@@ -18,7 +18,6 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/product-info" element={<ProductInfo />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUp />} />
@@ -27,6 +26,7 @@ export default function App() {
         <Route path="/Account" element={<Account />} />
         <Route path="/notices" element={<Appendices />} />
         <Route path="/checkout-response" element={<CheckoutResponse />} />
+        <Route path="/products/:productName" element={<ProductInfo />} />
       </Routes>
     </Router>
     //<Account/>
