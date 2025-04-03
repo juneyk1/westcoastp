@@ -32,7 +32,6 @@ const Landing = () => {
   return (
     <div>
       <Header />
-      
       <div className="product-container">
         {products.length > 0 ? (
           products.map((product, index) => (
