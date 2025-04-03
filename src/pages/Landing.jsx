@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./header";
-import supabase from "../supabaseClient";
+import { supabaseClient } from "../services/supabaseClient";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -10,10 +10,10 @@ const Landing = () => {
   // Fetch products from Supabase on component mount
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from("products")
         .select("name, description, image");
-      
+
       if (error) {
         console.error("Error fetching products:", error);
       } else {
@@ -25,14 +25,14 @@ const Landing = () => {
   }, []);
 
   const handleProductClick = (name) => {
-    // Navigate to a product info page 
+    // Navigate to a product info page
     navigate(`/products/${name}`);
   };
 
   return (
     <div>
       <Header />
-      
+
       <div className="product-container">
         {products.length > 0 ? (
           products.map((product, index) => (
