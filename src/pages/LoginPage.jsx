@@ -13,6 +13,9 @@ import {
   Link,
 } from "@mui/material";
 import { Mail, Lock, Visibility, VisibilityOff} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+
+
 export default function LoginPage() {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -21,8 +24,10 @@ export default function LoginPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    // Add your login logic here
+    navigate("/");
   };
+
+  const navigate = useNavigate();
 
   return (
     <div className="py-[50px]">
@@ -121,7 +126,7 @@ export default function LoginPage() {
                 <Link
                   component="button"
                   onClick={() => {
-                    /* Add sign up logic */
+                    navigate("/signup");
                   }}
                 >
                   Sign up

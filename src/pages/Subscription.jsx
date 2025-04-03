@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 
+import { useNavigate } from "react-router-dom";
+import Landing from './Landing';
+
 const SubscriptionPage = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     address1: '',
     address2: '',
+    address3: '',
+    address4: '',
     cardNumber: '',
     expDate: '',
     securityCode: '',
@@ -22,6 +29,7 @@ const SubscriptionPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Form submitted:', formData);
+    navigate("/checkout-response");
   };
 
   return (
@@ -75,6 +83,30 @@ const SubscriptionPage = () => {
               type="text"
               name="address2"
               value={formData.address2}
+              onChange={handleChange}
+              style={styles.input}
+              placeholder="Apt, suite, building (optional)"
+            />
+          </div>
+        </div>
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Billing To</h2>
+          <div style={styles.inputGroup}>
+            <input
+              type="text"
+              name="address1"
+              value={formData.address3}
+              onChange={handleChange}
+              style={styles.input}
+              placeholder="Street address"
+              required
+            />
+          </div>
+          <div style={styles.inputGroup}>
+            <input
+              type="text"
+              name="address2"
+              value={formData.address4}
               onChange={handleChange}
               style={styles.input}
               placeholder="Apt, suite, building (optional)"
@@ -207,7 +239,7 @@ const styles = {
     borderRadius: '6px',
     fontSize: '14px',
     width: '100%',
-    maxWidth: '150px'
+    maxWidth: '140px'
   },
   cardDetails: {
     display: 'flex',

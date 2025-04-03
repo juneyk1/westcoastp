@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import Header from './header'
-
+import { useNavigate } from "react-router-dom";
 
 
 export default function Checkout() {
+  const navigate = useNavigate();
+
   const [items, setItems] = useState([
     { 
       sku: 1, 
@@ -89,7 +91,7 @@ export default function Checkout() {
 
 
   return (
-    <div className="max-w-6xl mx-auto p-6 py-24">
+    <div className="max-w-6xl mx-auto">
       <Header/>
     <h2 className="text-3xl font-medium mb-6">Your Cart ({items.length} items)</h2>
     
@@ -171,7 +173,7 @@ export default function Checkout() {
             </div>
             <div className="flex justify-between font-medium">
               <span>Savings:</span>
-              <span>${OGgrandTotal - grandTotal}</span>
+              <span>${(OGgrandTotal - grandTotal).toFixed(2)}</span>
             </div>
           </div>
           
@@ -179,7 +181,8 @@ export default function Checkout() {
             <p className="text-sm text-green-600 mb-4">
               Congrats, you're eligible for Free Shipping
             </p>
-            <button className="w-full bg-black text-white py-3 rounded hover:bg-gray-800">
+            <button onClick={() => navigate("/subscribe")}
+              className="w-full bg-black text-white py-3 rounded hover:bg-gray-800">
               Check out
             </button>
           </div>

@@ -13,6 +13,7 @@ import {
   Link,
 } from "@mui/material";
 import { Mail, Lock, Visibility, VisibilityOff, Person, Warehouse } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 export default function SignUp() {
   const [name, setName] = React.useState("");
@@ -22,9 +23,11 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState("");
 
+  const navigate = useNavigate();
+
   const handleSubmit = (event) => {
     event.preventDefault();
-    // Add your login logic here
+    navigate("/subscribe");
   };
 
   return (

@@ -24,21 +24,21 @@ const Landing = () => {
     fetchProducts();
   }, []);
 
-  const handleProductClick = () => {
+  const handleProductClick = (name) => {
     // Navigate to a product info page 
-    navigate("/product-info");
+    navigate(`/products/${name}`);
   };
 
   return (
     <div>
       <Header />
-      
-      <div className="product-container" onClick={handleProductClick}>
+      <div className="product-container">
         {products.length > 0 ? (
           products.map((product, index) => (
             <div
               key={product.id}
               className={`product ${index === 1 ? "selected" : ""}`}
+              onClick={() => handleProductClick(product.name)}
             >
               {/* Render the product image */}
               <img
