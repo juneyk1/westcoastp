@@ -3,7 +3,7 @@ import Header from './header';
 import "./ProductInfo.css";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import supabase from "../supabaseClient";
+import {supabaseClient} from "../services/supabaseClient";
 
 
 const ProductInfo = () => {
@@ -16,7 +16,7 @@ const ProductInfo = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
         .from("products")
         .select()
         .eq('name', productName);

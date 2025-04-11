@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -11,23 +11,81 @@ import {
   InputAdornment,
   Stack,
   Link,
+  LinearProgress,
 } from "@mui/material";
-import { Mail, Lock, Visibility, VisibilityOff} from "@mui/icons-material";
+import { Mail, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-
+import { UserAuth } from "../contexts/AuthContexts"; // Import UserAuth
 
 export default function LoginPage() {
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [error, setError] = React.useState("");
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    navigate("/");
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [localError, setLocalError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
 
   const navigate = useNavigate();
+  const { signInUser, error: authError, resetError, loading } = UserAuth(); // Use signInUser from context
+
+  useEffect(() => {
+    if (authError) {
+      setLocalError(authError);
+      console.log("Auth error detected:", authError);
+    }
+  }, [authError]);
+
+  useEffect(() => {
+    return () => {
+      resetError();
+    };
+  }, [resetError]);
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.match(/[a-z]/)) strength++;
+    if (password.match(/[A-Z]/)) strength++;
+    if (password.match(/[0-9]/)) strength++;
+    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    return strength;
+  };
+
+  useEffect(() => {
+    setPasswordStrength(calculatePasswordStrength(password));
+  }, [password]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setLocalError("");
+    resetError();
+    setIsSubmitting(true);
+
+    try {
+      const response = await signInUser(email, password); // Use signInUser
+      if (!response.success) {
+        if (response.error && typeof response.error === "object") {
+          setLocalError(
+            response.error.message || "Login failed. Please try again."
+          );
+        } else if (typeof response.error === "string") {
+          setLocalError(response.error);
+        } else {
+          setLocalError("Login failed. Please try again.");
+        }
+        setIsSubmitting(false);
+        return;
+      }
+      navigate("/");
+    } catch (err) {
+      setLocalError("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isProcessing = isSubmitting || loading;
+  const isPasswordStrongEnough = passwordStrength === 5;
 
   return (
     <div className="py-[50px]">
@@ -45,9 +103,9 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={3}>
-                {error && (
+                {localError && (
                   <Alert severity="error" sx={{ mb: 2 }}>
-                    {error}
+                    {localError}
                   </Alert>
                 )}
 
@@ -61,6 +119,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="john.doe@example.com"
                   required
+                  disabled={isProcessing}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -80,6 +139,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
+                  disabled={isProcessing}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -91,6 +151,10 @@ export default function LoginPage() {
                         <IconButton
                           onClick={() => setShowPassword(!showPassword)}
                           edge="end"
+                          disabled={isProcessing}
+                          aria-label={
+                            showPassword ? "Hide password" : "Show password"
+                          }
                         >
                           {showPassword ? <VisibilityOff /> : <Visibility />}
                         </IconButton>
@@ -98,12 +162,26 @@ export default function LoginPage() {
                     ),
                   }}
                 />
+                <LinearProgress
+                  variant="determinate"
+                  value={(passwordStrength / 5) * 100}
+                />
+                <Typography variant="caption">
+                  Password Strength: {passwordStrength}/5 (8+ chars, 1
+                  uppercase, 1 lowercase, 1 number, 1 symbol)
+                </Typography>
 
                 <Button
                   type="submit"
                   variant="contained"
                   fullWidth
                   size="large"
+                  disabled={
+                    !email ||
+                    !password ||
+                    isProcessing ||
+                    !isPasswordStrongEnough
+                  }
                 >
                   Sign in
                 </Button>
@@ -123,12 +201,7 @@ export default function LoginPage() {
 
               <Typography variant="body2" align="center">
                 Don't have an account?{" "}
-                <Link
-                  component="button"
-                  onClick={() => {
-                    navigate("/signup");
-                  }}
-                >
+                <Link component="button" onClick={() => navigate("/signup")}>
                   Sign up
                 </Link>
               </Typography>
