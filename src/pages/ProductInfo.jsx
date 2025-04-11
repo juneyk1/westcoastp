@@ -38,7 +38,6 @@ const ProductInfo = () => {
 
   const handleAddToCart = () => {
     setCartMessage("Product added to cart!");
-    navigate("/checkout");
   };
 
   const navigate = useNavigate();
