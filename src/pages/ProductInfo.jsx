@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import './ProductInfo.css';
 import { useNavigate } from "react-router-dom";
 import Header from './header'
+import { CartContext } from './CartContext';
+
 
 const ProductInfo = () => {
     // mock data
@@ -17,10 +19,12 @@ const ProductInfo = () => {
     const [cartMessage, setCartMessage] = useState('');
 
     const handleAddToCart = () => {
+        addToCart(product);
         setCartMessage('Product added to cart!')
     };
 
     const navigate = useNavigate();
+    const { addToCart } = useContext(CartContext);
 
     return (
         <div className="product-info-page">

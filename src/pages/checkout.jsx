@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import Header from './header'
-
+import { CartContext } from './CartContext';
 
 
 export default function Checkout() {
-  const [items, setItems] = useState([
+  /*const [items, setItems] = useState([
     { 
       sku: 1, 
       name: 'Gloves',
@@ -53,7 +53,7 @@ export default function Checkout() {
       shippingDate: 'June 21st',
       isShippingDateEstimated: true
     }
-  ]);
+  ]*/const { items, updateQuantity } = useContext(CartContext);
 
   function calculateSubtotal() {
     let subtotal = 0; //Creates a subtotal
@@ -79,14 +79,17 @@ export default function Checkout() {
   const OGsalesTax = OGsubtotal * 0.08;
   const OGgrandTotal = (OGsubtotal + OGsalesTax).toFixed(2);
 
-  function handleQuantityChange(itemSku, newQuantity) {
+  /*function handleQuantityChange(itemSku, newQuantity) {
     if (newQuantity < 0) return;
     setItems(items.map(item => 
       item.sku === itemSku ? { ...item, quantity: newQuantity } : item
     ));
-  }
 
-
+  }*/
+  const handleQuantityChange = (sku, qty) => {
+    if (qty < 0) return;
+    updateQuantity(sku, qty);
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6 py-24">

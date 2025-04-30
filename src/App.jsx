@@ -11,9 +11,11 @@ import LoginPage from "./pages/LoginPage";
 import SignUp from "./pages/signUp";
 import About from "./pages/About";
 import Account from  "./pages/Account";
+import { CartProvider } from './pages/CartContext';
 
 export default function App() {
   return (
+    <CartProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -26,6 +28,7 @@ export default function App() {
         <Route path="/Account" element={<Account/>} />
       </Routes>
     </Router>
+    </CartProvider>
     //<Account/>
   );
 }
