@@ -13,8 +13,10 @@ import About from "./pages/About";
 import Account from "./pages/Account";
 import Appendices from "./pages/Appendices";
 import CheckoutResponse from "./pages/checkout-response";
+import { CartProvider } from './pages/CartContext';
 export default function App() {
   return (
+    <CartProvider>
     <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
@@ -29,6 +31,7 @@ export default function App() {
         <Route path="/products/:productName" element={<ProductInfo />} />
       </Routes>
     </Router>
+    </CartProvider>
     //<Account/>
   );
 }

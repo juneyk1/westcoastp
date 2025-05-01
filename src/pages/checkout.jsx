@@ -1,61 +1,12 @@
 import React, { useState } from 'react';
 import Header from './header'
 import { useNavigate } from "react-router-dom";
+import { useCart } from "./CartContext";
 
 
 export default function Checkout() {
-  const navigate = useNavigate();
-
-  const [items, setItems] = useState([
-    { 
-      sku: 1, 
-      name: 'Gloves',
-      ogPrice: 11.99, 
-      price: 9.99, 
-      quantity: 1, 
-      image: 'src/assets/gloves.png',
-      seller: "June",
-      description: 'Place holder description',
-      shippingDate: 'September 17th',
-      isShippingDateEstimated: true
-    },
-    { 
-      sku: 2, 
-      name: 'Stethoscope', 
-      ogPrice: 70.99,
-      price: 49.99, 
-      quantity: 1, 
-      image: 'src/assets/stethoscope.png',
-      seller: 'Sophia',
-      description: 'Placeholder description',
-      shippingDate: 'May 5th',
-      isShippingDateEstimated: true
-    },
-    { 
-      sku: 3, 
-      name: 'Band-Aids (4 pack)', 
-      ogPrice:6.99,
-      price: 3.99, 
-      quantity: 1, 
-      image: 'src/assets/bandAids.png',
-      seller: 'Zach',
-      description: 'Placeholder description',
-      shippingDate: 'April 4th',
-      isShippingDateEstimated: true
-    },
-    { 
-      sku: 4, 
-      name: 'Ozempic',
-      ogPrice: 27.99, 
-      price: 20.99, 
-      quantity: 1, 
-      image: 'src/assets/ozempic.png',
-      seller: 'Miguel',
-      description: 'Placeholder description',
-      shippingDate: 'June 21st',
-      isShippingDateEstimated: true
-    }
-  ]);
+  //const navigate = useNavigate();
+  const { items, setItems } = useCart();
 
   function calculateSubtotal() {
     let subtotal = 0; //Creates a subtotal
