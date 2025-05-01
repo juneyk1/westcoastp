@@ -2,13 +2,15 @@ require 'stripe'
 require 'sinatra'
 require 'dotenv/load'
 require 'json'
+require 'dotenv'
 
+Dotenv.load
 Stripe.api_key = ENV['STRIPE_SECRET_KEY']
+puts "Stripe key: #{ENV['STRIPE_SECRET_KEY'].nil? ? 'Not found' : 'Found (not showing for security)'}"
 
 set :port, 42069
 set :static, true
 set :public_folder, 'public'
-
 
 # CORS preflight options
 options "*" do
@@ -26,12 +28,11 @@ before do
   response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept'
 end
 
-
 # This route creates a SetupIntent for the subscription
 post '/api/create-subscription-intent' do
   data = JSON.parse(request.body.read)
   product_id = data['productId']
-
+  
   begin
     setup_intent = Stripe::SetupIntent.create(
       payment_method_types: ['card'],
@@ -39,7 +40,7 @@ post '/api/create-subscription-intent' do
         product_id: product_id
       }
     )
-
+    
     {
       clientSecret: setup_intent.client_secret
     }.to_json
@@ -55,36 +56,47 @@ post '/api/create-subscription' do
   payment_method_id = data['paymentMethodId']
   product_id = data['productId']
   customer_info = data['customerInfo']
-
+  
   begin
     # Create a customer
     customer = Stripe::Customer.create(
       payment_method: payment_method_id,
       email: customer_info['email'],
       name: customer_info['name'],
-      shipping: customer_info['shipping'],
       invoice_settings: {
         default_payment_method: payment_method_id
       }
     )
-
+    
+    # Store the userId for later reference if provided
+    if customer_info['userId']
+      Stripe::Customer.update(
+        customer.id,
+        metadata: { user_id: customer_info['userId'] }
+      )
+    end
+    
     # Get the price ID for the product
     price_id = get_price_id_for_product(product_id)
-
+    
     # Create a subscription
     subscription = Stripe::Subscription.create(
       customer: customer.id,
       items: [{ price: price_id }],
-      expand: ['latest_invoice.payment_intent']
-    )
+    )   
 
-    # Update the user's subscription status in your database
-    update_user_subscription_status(customer.id, true)
-
-    {
+    
+    # Prepare response
+    response = {
       subscriptionId: subscription.id,
-      clientSecret: subscription.latest_invoice.payment_intent.client_secret
-    }.to_json
+      status: subscription.status
+    }
+    response[:status] = 'succeeded' 
+    
+    # Log the subscription creation
+    puts "Created subscription for customer #{customer.id}: #{subscription.id} with status: #{subscription.status}"
+    
+    response.to_json
   rescue Stripe::StripeError => e
     status 400
     { error: e.message }.to_json
@@ -97,12 +109,10 @@ end
 
 # Helper method to get the price ID for a product
 def get_price_id_for_product(product_id)
-  product = Stripe::Product.retrieve(product_id)
   prices = Stripe::Price.list(product: product_id, active: true, limit: 1)
   
   if prices.data.empty?
     raise "No active price found for product #{product_id}"
   end
-
   prices.data.first.id
 end
