@@ -3,24 +3,30 @@ import Header from './header';
 import "./ProductInfo.css";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "./CartContext";
+import supabase from "../supabaseClient";
 import {supabaseClient} from "../services/supabaseClient";
 
 
 const ProductInfo = () => {
   const { productName } = useParams();
-  console.log(productName);
-  const [product, setProduct] = useState([]);
+  const { items, setItems } = useCart(); 
+  const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cartMessage, setCartMessage] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data, error } = await supabaseClient
-        .from("products")
-        .select()
-        .eq('name', productName);
+        const { data, error } = await supabase
+          .from("products")
+          .select()
+          .eq("name", productName);
+
         if (error) throw error;
+        if (data.length === 0) throw new Error("Product not found");
         setProduct(data[0]);
       } catch (err) {
         setError(err.message);
@@ -28,66 +34,59 @@ const ProductInfo = () => {
         setLoading(false);
       }
     };
-    fetchProduct();
-  }, []);
 
+    fetchProduct();
+  }, [productName]);
+
+  if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error}</p>;
   if (!product) return <p>Product not found.</p>;
 
-  const [cartMessage, setCartMessage] = useState("");
-
   const handleAddToCart = () => {
-    setCartMessage("Product added to cart!");
-  };
+    const existing = items.find((item) => item.sku === product.id); // Assuming `product.id` is unique
+    if (existing) {
+      setItems(
+        items.map((item) =>
+          item.sku === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      );
+    } else {
+      setItems([
+        ...items,
+        {
+          sku: product.id,
+          name: product.name,
+          image: product.image,
+          description: product.description,
+          price: product.target,
+          ogPrice: product.ASP,
+          quantity: 1,
+          shippingDate: product.shippingDate || null,
+          seller: product.seller || null,
+        },
+      ]);
+    }
 
-  const navigate = useNavigate();
+    setCartMessage("Product added to cart!");
+    setTimeout(() => setCartMessage(""), 3000); // clear message after 3s
+  };
 
   return (
     <div className="product-info-page">
       <Header />
       <div className="product-container">
         <div className="img-container">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="product-image"
-          />
+          <img src={product.image} alt={product.name} className="product-image" />
         </div>
         <div className="product-more">
           <div className="product-details">
-            <p
-              style={{
-                fontSize: "20px",
-                paddingTop: "5px",
-                paddingBottom: "5px",
-              }}
-            >
-              {product.name}
-            </p>
-            <p
-              style={{
-                fontSize: "14px",
-                paddingTop: "5px",
-                paddingBottom: "5px",
-              }}
-            >
-              {product.description}
-            </p>
-            <p
-              style={{
-                fontSize: "18px",
-                paddingTop: "5px",
-                paddingBottom: "5px",
-              }}
-            >
+            <p style={{ fontSize: "20px", padding: "5px 0" }}>{product.name}</p>
+            <p style={{ fontSize: "14px", padding: "5px 0" }}>{product.description}</p>
+            <p style={{ fontSize: "18px", padding: "5px 0" }}>
               Unit Price:
-              <span
-                style={{
-                  textDecoration: "line-through",
-                  paddingRight: "10px",
-                  paddingLeft: "10px",
-                }}
-              >
+              <span style={{ textDecoration: "line-through", padding: "0 10px" }}>
                 ${product.ASP}.00
               </span>
               <span>${product.target}.00</span>
@@ -97,28 +96,6 @@ const ProductInfo = () => {
             Add to Cart
           </button>
           {cartMessage && <p className="cart-message">{cartMessage}</p>}
-        </div>
-      </div>
-      <div className="quantity">
-        <span style={{ fontSize: "20px" }}>Quantity: </span>
-        <span>
-          <button onClick={null} className="qty-button">
-            -
-          </button>
-        </span>
-        <span style={{ fontSize: "20px" }}>1</span>
-        <span>
-          <button onClick={null} className="qty-button">
-            +
-          </button>
-        </span>
-      </div>
-      <div className="related-products">
-        <p style={{ fontSize: "20px", textAlign: "left" }}>Related Products</p>
-        <div className="relproduct-container">
-          {[...Array(2)].map((_, index) => (
-            <div key={index} className="product"></div>
-          ))}
         </div>
       </div>
     </div>

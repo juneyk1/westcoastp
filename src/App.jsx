@@ -13,6 +13,7 @@ import About from "./pages/About";
 import Account from "./pages/Account";
 import Appendices from "./pages/Appendices";
 import CheckoutResponse from "./pages/checkout-response";
+import { CartProvider } from './pages/CartContext';
 import { AuthContextProvider } from "./contexts/AuthContexts";
 export default function App() {
   return (
@@ -32,5 +33,22 @@ export default function App() {
         </Routes>
       </Router>
     </AuthContextProvider>
+    <CartProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/subscribe" element={<SubscriptionForm />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/Account" element={<Account />} />
+        <Route path="/notices" element={<Appendices />} />
+        <Route path="/checkout-response" element={<CheckoutResponse />} />
+        <Route path="/products/:productName" element={<ProductInfo />} />
+      </Routes>
+    </Router>
+    </CartProvider>
+    //<Account/>
   );
 }
