@@ -1,212 +1,88 @@
-import { useNavigate } from 'react-router-dom';
-import React, { useState, useEffect } from "react";
-import { loadStripe } from "@stripe/stripe-js";
+
+import React, { useEffect, useState } from "react";
+import { useNavigate }                  from "react-router-dom";
+import { loadStripe }                   from "@stripe/stripe-js";
 import {
   Elements,
   CardElement,
   useStripe,
-  useElements,
+
+  useElements
 } from "@stripe/react-stripe-js";
-import { supabaseClient } from "../services/supabaseClient";
-import { UserAuth } from "../contexts/AuthContexts";
+import { UserAuth }                     from "../contexts/AuthContexts";
+import {
+  createSetupIntent,
+  createSubscription,
+  checkSubscription
+} from "../services/stripeClient";
 
-const stripePromise = loadStripe(
-  "pk_test_51RHjcU095U3ovyFQpzMXWiESIHyrPFWLZw9ZDkv3bLfYBjcl3AX6nbfMDN3hByS889U374PWYUCWGGiVRpiAVYiF008jihvzxt"
-);
 
-const PRODUCT_ID = "prod_SC7u7P8S6ntLiz";
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = () => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { user, signOut, loading, error: authError } = UserAuth();
-  const navigate = useNavigate();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentError, setPaymentError] = useState(null);
-  const [clientSecret, setClientSecret] = useState("");
-  const [subscriptionSuccess, setSubscriptionSuccess] = useState(false);
-  const [supabaseUpdateSuccess, setSupabaseUpdateSuccess] = useState(false);
 
-  const [formData, setFormData] = useState({
+function SubscriptionForm({ clientSecret }) {
+  const stripe    = useStripe();
+  const elements  = useElements();
+  const { user }  = UserAuth();
+  const navigate  = useNavigate();
+
+  const [formData, setForm]       = useState({
     firstName: "",
-    lastName: "",
+    lastName:  "",
+    email: user.email,
     billingAddress1: "",
     billingAddress2: "",
-    zipCode: "",
-    email: "",
+    zipCode: ""
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
 
-  useEffect(() => {
-    // Pre-fill email if user is logged in
-    if (user && user.email) {
-      setFormData((prev) => ({
-        ...prev,
-        email: user.email,
-      }));
-    }
-
-    // Fetch client secret from your backend
-    fetch('http://127.0.0.1:42069/api/create-subscription-intent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        productId: PRODUCT_ID
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          setPaymentError(data.error);
-        } else {
-          setClientSecret(data.clientSecret);
-        }
-      })
-      .catch((err) => {
-        setPaymentError("Failed to connect to the server. Please try again later.");
-        console.error("Error fetching client secret:", err);
-      });
-  }, [user]);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
   };
 
-  // Function to update user subscription in Supabase
-  const updateUserSubscriptionInSupabase = async (userId) => {
-    try {
-      if (!userId) {
-        console.error("Cannot update subscription: User ID is missing");
-        return false;
-      }
-  
-      // Update the users table with is_subscribed field
-      const { data, error, status } = await supabaseClient
-        .from("users")
-        .update({ 
-          is_subscribed: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", userId);
-  
-      // Handle both error cases and 204 No Content success case
-      if (error) {
-        console.error("Error updating subscription in Supabase:", error);
-        return false;
-      }
-      
-      // Status 204 means success with no content returned
-      if (status === 204 || status === 200) {
-        console.log("Supabase subscription updated successfully for user:", userId);
-        return true;
-      }
-      
-      console.log("Supabase response status:", status);
-      return true;
-    } catch (err) {
-      console.error("Exception updating subscription in Supabase:", err);
-      return false;
-    }
-  };
-  
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    if (!stripe || !elements) {
+    const { setupIntent, error: confirmError } = await stripe.confirmCardSetup(
+      clientSecret,
+      {
+        payment_method: {
+          card: elements.getElement(CardElement),
+          billing_details: {
+            name:  `${formData.firstName} ${formData.lastName}`,
+            email: formData.email
+          }
+        }
+      }
+    );
+
+    if (confirmError) {
+      setError(confirmError.message);
+      setLoading(false);
       return;
     }
-
-    // Check if user is logged in
-    if (!user) {
-      setPaymentError(
-        "You must be logged in to subscribe. Please sign in first."
-      );
-      return;
-    }
-
-    setIsProcessing(true);
-    setPaymentError(null);
 
     try {
-      // Create payment method
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: "card",
-        card: elements.getElement(CardElement),
-        billing_details: {
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-        },
+      await createSubscription({
+        paymentMethodId: setupIntent.payment_method,
+        priceId:         import.meta.env.VITE_STRIPE_PRICE_ID,
+        customerInfo:    { userId: user.id, email: formData.email }
       });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Send payment method to backend
-      const response = await fetch(
-        "http://127.0.0.1:42069/api/create-subscription",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            paymentMethodId: paymentMethod.id,
-            productId: PRODUCT_ID,
-            customerInfo: {
-              name: `${formData.firstName} ${formData.lastName}`,
-              email: formData.email,
-              userId: user.id, // Pass user ID to backend if needed
-            },
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // Handle subscription confirmation
-      if (result.status === "succeeded" || result.status === "active") {
-        // Payment was already successful, update Supabase
-        const supabaseResult = await updateUserSubscriptionInSupabase(user.id);
-        setSupabaseUpdateSuccess(supabaseResult);
-        setSubscriptionSuccess(true);
-      } else if (result.clientSecret) {
-        // Need to confirm the payment
-        const confirmResult = await stripe.confirmCardPayment(
-          result.clientSecret
-        );
-
-        if (confirmResult.error) {
-          throw new Error(confirmResult.error.message);
-        }
-
-        // After successful payment, update Supabase
-        const supabaseResult = await updateUserSubscriptionInSupabase(user.id);
-        setSupabaseUpdateSuccess(supabaseResult);
-        setSubscriptionSuccess(true);
-      } else {
-        // If no client secret is returned but operation was successful
-        // Still update Supabase
-        const supabaseResult = await updateUserSubscriptionInSupabase(user.id);
-        setSupabaseUpdateSuccess(supabaseResult);
-        setSubscriptionSuccess(true);
-      }
+      navigate("/checkout");
     } catch (err) {
-      setPaymentError(
-        err.message || "An error occurred while processing your payment."
-      );
-      console.error("Payment error:", err);
-    } finally {
-      setIsProcessing(false);
+          let msg = err.message;
+          if (err.response) {
+            try {
+              const body = await err.response.json();
+              msg = body.error || msg;
+            } catch {}
+      }
+      setError(err.message || "Subscription failed");
+      setLoading(false);
     }
   };
 
@@ -259,19 +135,17 @@ const CheckoutForm = () => {
 
   return (
     <div className="max-w-lg mx-auto my-10 px-5">
-      <h1 className="text-3xl font-semibold text-center mb-2">
-        Your Subscription
-      </h1>
-      <div className="text-xl text-gray-600 text-center mb-10">$1000/mo</div>
+      <div className="bg-white rounded-2xl p-6 shadow-md text-center mb-10">
+        <h1 className="text-3xl font-semibold">Your Subscription</h1>
+        <p className="text-4xl font-extrabold mt-4">
+          $100<span className="text-2xl font-medium">/mo</span>
+        </p>
+        <p className="mt-2 text-gray-600">
+          Unlock member pricing on all medical devices
+        </p>
+      </div>
 
-      {!user && (
-        <div className="bg-yellow-100 p-4 rounded-md text-yellow-800 mb-6">
-          You need to be signed in to purchase a subscription. Please sign in
-          first.
-        </div>
-      )}
-
-      <div className="flex flex-col space-y-8">
+      <form onSubmit={handleSubmit} className="flex flex-col space-y-8">
         {/* Name Section */}
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col space-y-2">
@@ -304,7 +178,9 @@ const CheckoutForm = () => {
 
         {/* Email */}
         <div className="flex flex-col space-y-2">
-          <label className="text-sm font-medium text-gray-700">Email</label>
+          <label className="text-sm font-medium text-gray-700">
+            Email
+          </label>
           <input
             type="email"
             name="email"
@@ -373,28 +249,48 @@ const CheckoutForm = () => {
           </div>
         </div>
 
-        {paymentError && (
-          <div className="text-red-600 text-sm">{paymentError}</div>
-        )}
+        {error && <p className="text-red-600 text-center">{error}</p>}
 
         <button
-          onClick={handleSubmit}
-          className="bg-black text-white py-4 rounded-md font-semibold text-base cursor-pointer mt-4 disabled:opacity-50"
-          disabled={!stripe || isProcessing || !user}
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 bg-blue-600 text-white rounded-md text-sm disabled:opacity-50"
         >
-          {isProcessing ? "Processing..." : "Subscribe"}
+          {loading ? "Processing…" : "Subscribe"}
         </button>
-      </div>
+      </form>
     </div>
   );
-};
+}
 
-const SubscriptionPage = () => {
+export default function Subscription() {
+  const [clientSecret, setClientSecret] = useState("");
+  const { user }                        = UserAuth();
+  const navigate                        = useNavigate();
+
+  useEffect(() => {
+    if (!user) return navigate("/login");
+
+    (async () => {
+      const { active } = await checkSubscription(user.id);
+      if (active) {
+        navigate("/checkout");
+      } else {
+        const { clientSecret } = await createSetupIntent(
+          import.meta.env.VITE_STRIPE_PRICE_ID
+        );
+        setClientSecret(clientSecret);
+      }
+    })();
+  }, [user, navigate]);
+
+  if (!clientSecret) {
+    return <p className="text-center mt-8">Loading payment form…</p>;
+  }
+
   return (
     <Elements stripe={stripePromise}>
-      <CheckoutForm />
+      <SubscriptionForm clientSecret={clientSecret} />
     </Elements>
   );
-};
-
-export default SubscriptionPage;
+}
