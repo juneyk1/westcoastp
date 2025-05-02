@@ -2,6 +2,7 @@ import Header from "./header";
 import React, { useEffect, useState } from "react";
 // import { UserAuth } from ".../contexts/AuthContext"; // Pull the context we are working in
 import { UserAuth } from "../contexts/AuthContexts"
+import Appendices from "./Appendices";
 
 const Account = () => {
   const { user, signOut, loading, error } = UserAuth();
@@ -113,6 +114,7 @@ const Account = () => {
           </p>
         </div>
       </div>
+      <Appendices/>
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { supabaseClient } from "../services/supabaseClient";
+import Appendices from "./Appendices";
 
 const ProductInfo = () => {
   const { productName } = useParams();
@@ -96,6 +97,7 @@ const ProductInfo = () => {
           {cartMessage && <p className="cart-message">{cartMessage}</p>}
         </div>
       </div>
+      <Appendices/>
     </div>
   );
 };

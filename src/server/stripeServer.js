@@ -5,6 +5,10 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 
+console.log("Module URL:", import.meta.url);
+console.log("Process.argv[1]:", process.argv[1]);
+const isMain = import.meta.url === `file://${process.argv[1]}`;
+console.log("Is this the main module?", isMain);;
 
 dotenv.config();
 
@@ -133,7 +137,9 @@ app.post("/create-subscription", async (req, res) => {
     }
   });
   
-
+  console.log("⏳ About to start server…");
   app.listen(4242, () =>
     console.log("Stripe server listening")
   );
+console.log("Open handles:", process._getActiveHandles().length);
+process.stdin.resume();

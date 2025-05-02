@@ -88,7 +88,7 @@ function SubscriptionForm({ clientSecret }) {
   if (success) {
     // Set up redirect after 12 seconds
     const redirectTimer = setTimeout(() => {
-      navigate('/checkout');
+      navigate('/checkout-response');
     }, 3500);
   
     return (

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Header from './header'
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
-
+import Appendices from "./Appendices";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -140,6 +140,7 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+      <Appendices/>
     </div>
 
 );
