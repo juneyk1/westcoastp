@@ -1,19 +1,22 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from "react";
 import { supabaseClient } from "../services/supabaseClient";
 
-const AuthContext = createContext();
+
+const AuthContext = createContext(null);
 
 export const AuthContextProvider = ({ children }) => {
+  // State management
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [addresses, setAddresses] = useState([]);
+  
+  const setDefaultAddressRef = useRef(null);
 
-  const resetError = () => setError(null);
+  const resetError = useCallback(() => setError(null), []);
 
-  // Enhanced fetchAddresses with type-specific defaults
-  const fetchAddresses = async (userId) => {
+  const fetchAddresses = useCallback(async (userId) => {
     if (!userId) return;
     
     setLoading(true);
@@ -28,28 +31,38 @@ export const AuthContextProvider = ({ children }) => {
       if (fetchError) throw fetchError;
       
       setAddresses(data || []);
+      return { success: true, data };
     } catch (err) {
       console.error("Error fetching addresses:", err);
       setError(err.message || "Failed to load addresses");
+      return { success: false, error: err.message };
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Enhanced addAddress with type-specific default handling
-  const addAddress = async (addressData) => {
+  const handleDefaultAddressUpdate = useCallback(async (userId, addressType, excludeId = null) => {
+    const query = supabaseClient
+      .from('addresses')
+      .update({ is_default: false })
+      .eq('user_id', userId)
+      .eq('type', addressType)
+      .eq('is_default', true);
+    
+    if (excludeId) {
+      query.neq('id', excludeId);
+    }
+    
+    return await query;
+  }, []);
+
+  const addAddress = useCallback(async (addressData) => {
     if (!user?.id) return { success: false, error: "User not authenticated" };
 
     setLoading(true);
     try {
-      // If setting as default, first unset any existing default of the same type
       if (addressData.is_default) {
-        await supabaseClient
-          .from('addresses')
-          .update({ is_default: false })
-          .eq('user_id', user.id)
-          .eq('type', addressData.type)
-          .eq('is_default', true);
+        await handleDefaultAddressUpdate(user.id, addressData.type);
       }
 
       const { data, error: insertError } = await supabaseClient
@@ -68,21 +81,15 @@ export const AuthContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, handleDefaultAddressUpdate]);
 
-  // Enhanced updateAddress with type-specific default handling
-  const updateAddress = async (addressId, updates) => {
+  const updateAddress = useCallback(async (addressId, updates) => {
+    if (!user?.id) return { success: false, error: "User not authenticated" };
+    
     setLoading(true);
     try {
-      // If setting as default, first unset any existing default of the same type
       if (updates.is_default) {
-        await supabaseClient
-          .from('addresses')
-          .update({ is_default: false })
-          .eq('user_id', user.id)
-          .eq('type', updates.type)
-          .eq('is_default', true)
-          .neq('id', addressId);
+        await handleDefaultAddressUpdate(user.id, updates.type, addressId);
       }
 
       const { data, error: updateError } = await supabaseClient
@@ -104,67 +111,29 @@ export const AuthContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, handleDefaultAddressUpdate]);
 
-  // Enhanced removeAddress with default address handling
-  const removeAddress = async (addressId) => {
+  const setDefaultAddress = useCallback(async (addressId) => {
+    if (!user?.id) return { success: false, error: "User not authenticated" };
+    
     setLoading(true);
     try {
-      // First check if this is a default address
-      const addressToDelete = addresses.find(addr => addr.id === addressId);
-      
-      const { error: deleteError } = await supabaseClient
-        .from('addresses')
-        .delete()
-        .eq('id', addressId);
-
-      if (deleteError) throw deleteError;
-
-      setAddresses(prev => prev.filter(addr => addr.id !== addressId));
-      
-      // If we deleted a default address, set a new default if available
-      if (addressToDelete?.is_default) {
-        const sameTypeAddresses = addresses.filter(
-          addr => addr.id !== addressId && addr.type === addressToDelete.type
-        );
+      // Get the address to determine its type
+      const addressToUpdate = addresses.find(addr => addr.id === addressId);
+      if (!addressToUpdate) {
+        const { data: address, error: fetchError } = await supabaseClient
+          .from('addresses')
+          .select('type')
+          .eq('id', addressId)
+          .single();
         
-        if (sameTypeAddresses.length > 0) {
-          await setDefaultAddress(sameTypeAddresses[0].id);
-        }
+        if (fetchError) throw fetchError;
+        
+        await handleDefaultAddressUpdate(user.id, address.type);
+      } else {
+        await handleDefaultAddressUpdate(user.id, addressToUpdate.type);
       }
       
-      return { success: true };
-    } catch (err) {
-      console.error("Error removing address:", err);
-      setError(err.message || "Failed to remove address");
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Enhanced setDefaultAddress with type-specific handling
-  const setDefaultAddress = async (addressId) => {
-    setLoading(true);
-    try {
-      // First get the address to determine its type
-      const { data: address, error: fetchError } = await supabaseClient
-        .from('addresses')
-        .select('type')
-        .eq('id', addressId)
-        .single();
-      
-      if (fetchError) throw fetchError;
-      
-      // Unset current default of the same type
-      await supabaseClient
-        .from('addresses')
-        .update({ is_default: false })
-        .eq('user_id', user.id)
-        .eq('type', address.type)
-        .eq('is_default', true);
-      
-      // Set new default
       const { data, error: updateError } = await supabaseClient
         .from('addresses')
         .update({ is_default: true })
@@ -176,7 +145,8 @@ export const AuthContextProvider = ({ children }) => {
       setAddresses(prev => 
         prev.map(addr => ({
           ...addr,
-          is_default: addr.id === addressId
+          is_default: addr.id === addressId ? true : 
+            (addr.type === data[0].type ? false : addr.is_default)
         }))
       );
       return { success: true, data: data[0] };
@@ -187,29 +157,73 @@ export const AuthContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [addresses, handleDefaultAddressUpdate, user]);
 
-  // Auth functions remain the same
-  const signUpNewUser = async (email, password) => {
+  useEffect(() => {
+    setDefaultAddressRef.current = setDefaultAddress;
+  }, [setDefaultAddress]);
+
+  const removeAddress = useCallback(async (addressId) => {
+    if (!user?.id) return { success: false, error: "User not authenticated" };
+    
+    setLoading(true);
+    try {
+      const addressToDelete = addresses.find(addr => addr.id === addressId);
+      if (!addressToDelete) {
+        throw new Error("Address not found");
+      }
+      
+      const { error: deleteError } = await supabaseClient
+        .from('addresses')
+        .delete()
+        .eq('id', addressId);
+
+      if (deleteError) throw deleteError;
+
+      setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+      
+      if (addressToDelete.is_default) {
+        const sameTypeAddresses = addresses.filter(
+          addr => addr.id !== addressId && addr.type === addressToDelete.type
+        );
+        
+        if (sameTypeAddresses.length > 0 && setDefaultAddressRef.current) {
+          await setDefaultAddressRef.current(sameTypeAddresses[0].id);
+        }
+      }
+      
+      return { success: true };
+    } catch (err) {
+      console.error("Error removing address:", err);
+      setError(err.message || "Failed to remove address");
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [addresses, user]);
+
+  const signUpNewUser = useCallback(async (email, password) => {
     setLoading(true);
     resetError();
 
     try {
       const { data, error: signUpError } = await supabaseClient.auth.signUp({
-        email: email.toLowerCase(),
+        email: email.toLowerCase().trim(),
         password: password,
       });
 
       if (signUpError) {
         if (signUpError.message.includes("already exists")) {
-          setError("Email already exists. Please use a different email.");
-          return { success: false, error: { message: "Email already exists" } };
+          const errorMsg = "Email already exists. Please use a different email.";
+          setError(errorMsg);
+          return { success: false, error: { message: errorMsg } };
         } else {
           setError(signUpError.message);
           return { success: false, error: signUpError };
         }
       }
 
+      // Update state if signup successful
       setUser(data.user);
       return { success: true, data };
     } catch (err) {
@@ -223,16 +237,16 @@ export const AuthContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resetError]);
 
-  const signInUser = async (email, password) => {
+  const signInUser = useCallback(async (email, password) => {
     setLoading(true);
     resetError();
 
     try {
       const { data, error: signInError } =
         await supabaseClient.auth.signInWithPassword({
-          email: email.toLowerCase(),
+          email: email.toLowerCase().trim(),
           password: password,
         });
 
@@ -242,7 +256,6 @@ export const AuthContextProvider = ({ children }) => {
       }
 
       setUser(data.user);
-      await fetchAddresses(data.user.id);
       return { success: true, data };
     } catch (err) {
       const errorMessage = "An unexpected error occurred during signin.";
@@ -255,9 +268,9 @@ export const AuthContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resetError]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     setLoading(true);
     resetError();
 
@@ -269,7 +282,9 @@ export const AuthContextProvider = ({ children }) => {
         return { success: false, error: signOutError };
       }
 
+      // Clear user data on successful logout
       setUser(null);
+      setSession(null);
       setAddresses([]);
       return { success: true };
     } catch (err) {
@@ -283,47 +298,64 @@ export const AuthContextProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [resetError]);
 
-  // Initialize auth state and set up listener for auth changes
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchSession = async () => {
+      if (!isMounted) return;
+      
       setLoading(true);
       try {
         const { data, error: sessionError } = await supabaseClient.auth.getSession();
-        if (sessionError) console.error("Error fetching session:", sessionError);
+        
+        if (sessionError) {
+          console.error("Error fetching session:", sessionError);
+          if (isMounted) setError(sessionError.message);
+          return;
+        }
 
-        setSession(data.session);
-        setUser(data.session?.user || null);
-        if (data.session?.user) {
-          await fetchAddresses(data.session.user.id);
+        if (isMounted) {
+          setSession(data.session);
+          setUser(data.session?.user || null);
+          
+          if (data.session?.user) {
+            await fetchAddresses(data.session.user.id);
+          }
         }
       } catch (err) {
-        console.error("Error fetching session:", err);
+        console.error("Error in auth initialization:", err);
+        if (isMounted) setError(err.message || "Failed to initialize authentication");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchSession();
 
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange(async (_event, currentSession) => {
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-      if (currentSession?.user) {
-        await fetchAddresses(currentSession.user.id);
-      } else {
-        setAddresses([]);
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
+      async (_event, currentSession) => {
+        if (!isMounted) return;
+        
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
+        
+        if (currentSession?.user) {
+          await fetchAddresses(currentSession.user.id);
+        } else {
+          setAddresses([]);
+        }
       }
-    });
+    );
 
-    return () => subscription?.unsubscribe();
-  }, []);
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, [fetchAddresses]);
 
-  // Context value
-  const value = {
+  const contextValue = {
     // Auth state
     session,
     user,
@@ -347,7 +379,7 @@ export const AuthContextProvider = ({ children }) => {
     setDefaultAddress,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };
 
 export const UserAuth = () => {
