@@ -21,21 +21,22 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 
 function SubscriptionForm({ clientSecret }) {
-  const stripe    = useStripe();
-  const elements  = useElements();
-  const { user }  = UserAuth();
-  const navigate  = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
+  const { user } = UserAuth();
+  const navigate = useNavigate();
 
-  const [formData, setForm]       = useState({
+  const [formData, setForm] = useState({
     firstName: "",
-    lastName:  "",
+    lastName: "",
     email: user.email,
     billingAddress1: "",
     billingAddress2: "",
     zipCode: ""
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
+  const [subscriptionSuccess, setSubscriptionSuccess] = useState(false)
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -72,7 +73,7 @@ function SubscriptionForm({ clientSecret }) {
         priceId:         import.meta.env.VITE_STRIPE_PRICE_ID,
         customerInfo:    { userId: user.id, email: formData.email }
       });
-      navigate("/checkout");
+      setSubscriptionSuccess(true);
     } catch (err) {
           let msg = err.message;
           if (err.response) {
@@ -87,10 +88,9 @@ function SubscriptionForm({ clientSecret }) {
   };
 
   if (subscriptionSuccess) {
-    // Set up redirect after 12 seconds
     const redirectTimer = setTimeout(() => {
-      navigate('/');
-    }, 12000);
+      navigate('/checkout');
+    }, 5000);
   
     return (
       <div className="max-w-lg mx-auto my-10 px-5 text-center">
@@ -103,12 +103,9 @@ function SubscriptionForm({ clientSecret }) {
         </p>
         <div className="bg-green-100 p-4 rounded-md text-green-800 mb-4">
           Your subscription has been activated successfully.
-          {supabaseUpdateSuccess
-            ? " Your account has been updated with premium access."
-            : " However, there was an issue updating your account status. Please contact support."}
         </div>
         <p className="text-sm text-gray-500">
-          You will be redirected to the home page in 12 seconds...
+          You will be redirected to the home page in 5 seconds...
         </p>
       </div>
     );
