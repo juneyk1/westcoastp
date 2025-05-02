@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./header";
+import Appendices from "./Appendices";
 import { supabaseClient } from "../services/supabaseClient";
 
 const Landing = () => {
@@ -30,7 +31,7 @@ const Landing = () => {
   };
 
   return (
-    <div>
+    <div className="landing-container">
       <Header />
       <div className="product-container">
         {products.length > 0 ? (
@@ -58,6 +59,7 @@ const Landing = () => {
           <p>No products found.</p>
         )}
       </div>
+      <Appendices />
     </div>
   );
 };
@@ -68,6 +70,11 @@ export default Landing;
    Dynamically inject your CSS styles
 ---------------------------------- */
 const styles = `
+  .landing-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;    
+  }
   .product-container {
     display: flex;
     justify-content: center;
@@ -75,6 +82,7 @@ const styles = `
     gap: 20px;
     overflow-x: auto;
     padding: 20px;
+    flex: 1; 
   }
   .product {
     width: 150px;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Header from "./header";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
+import Appendices from "./Appendices";
 import { UserAuth } from "../contexts/AuthContexts";
 
 export default function Checkout() {
@@ -249,6 +250,7 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+      <Appendices/>
     </div>
   );
 }

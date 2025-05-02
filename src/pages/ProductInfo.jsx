@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
 import Header from "./header";
 import "./ProductInfo.css";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { supabaseClient } from "../services/supabaseClient";
+import Appendices from "./Appendices";
 
 const ProductInfo = () => {
   const { productName } = useParams();
-  const { items, setItems } = useCart();
+  const { items, setItems } = useCart(); 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -116,7 +118,7 @@ const ProductInfo = () => {
       </div>
     );
   }
-
+  
   return (
     <div className="product-info-page">
       <Header />
@@ -142,6 +144,7 @@ const ProductInfo = () => {
           {cartMessage && <p className="cart-message">{cartMessage}</p>}
         </div>
       </div>
+      <Appendices/>
     </div>
   );
 };

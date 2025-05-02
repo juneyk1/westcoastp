@@ -1,0 +1,35 @@
+.document-page {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+  }
+  
+  .document-page h1,
+  .document-page h2,
+  .document-page h3 {
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+  
+  .document-page h1 {
+    font-size: 2rem;
+  }
+  
+  .document-page h2 {
+    font-size: 1.75rem;
+  }
+  
+  .document-page h3 {
+    font-size: 1.5rem;
+  }
+  
+  .document-page p,
+  .document-page ul {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  
+  .document-page section {
+    margin-bottom: 2rem;
+  }

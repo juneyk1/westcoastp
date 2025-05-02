@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import './About.css'
 import Header from './header.jsx'
+import Appendices from "./Appendices";
 
 const About = () => {
     // mock data
@@ -29,6 +30,7 @@ const About = () => {
                 <p style={{fontSize: '22px'}}> {blurb}</p>
                 </div>
             </div>
+            <Appendices/>
         </div>
     );
 }

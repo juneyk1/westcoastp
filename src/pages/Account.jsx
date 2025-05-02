@@ -1,5 +1,6 @@
 import Header from "./header";
 import React, { useEffect, useState } from "react";
+import Appendices from "./Appendices";
 import { UserAuth } from "../contexts/AuthContexts";
 
 const Account = () => {
@@ -533,6 +534,7 @@ const Account = () => {
           </div>
         </div>
       </div>
+      <Appendices/>
     </div>
   );
 };

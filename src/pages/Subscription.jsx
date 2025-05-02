@@ -35,8 +35,8 @@ function SubscriptionForm({ clientSecret }) {
     zipCode: ""
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [subscriptionSuccess, setSubscriptionSuccess] = useState(false)
+  const [success, setSuccess] = useState(false);
+  const [error, setError]     = useState("");
 
   const handleChange = e => {
     const { name, value } = e.target;
@@ -73,7 +73,6 @@ function SubscriptionForm({ clientSecret }) {
         priceId:         import.meta.env.VITE_STRIPE_PRICE_ID,
         customerInfo:    { userId: user.id, email: formData.email }
       });
-      setSubscriptionSuccess(true);
     } catch (err) {
           let msg = err.message;
           if (err.response) {
@@ -85,12 +84,14 @@ function SubscriptionForm({ clientSecret }) {
       setError(err.message || "Subscription failed");
       setLoading(false);
     }
+    setSuccess(true);
   };
-
-  if (subscriptionSuccess) {
+  
+  if (success) {
+    // Set up redirect after 12 seconds
     const redirectTimer = setTimeout(() => {
-      navigate('/checkout');
-    }, 5000);
+      navigate('/checkout-response');
+    }, 3500);
   
     return (
       <div className="max-w-lg mx-auto my-10 px-5 text-center">
@@ -105,7 +106,7 @@ function SubscriptionForm({ clientSecret }) {
           Your subscription has been activated successfully.
         </div>
         <p className="text-sm text-gray-500">
-          You will be redirected to the home page in 5 seconds...
+          You will be redirected back to checkout in a few seconds...
         </p>
       </div>
     );
