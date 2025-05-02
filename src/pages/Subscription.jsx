@@ -33,6 +33,7 @@ function SubscriptionForm({ clientSecret }) {
     zipCode: ""
   });
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError]     = useState("");
 
   const handleChange = e => {
@@ -70,7 +71,6 @@ function SubscriptionForm({ clientSecret }) {
         priceId:         import.meta.env.VITE_STRIPE_PRICE_ID,
         customerInfo:    { userId: user.id, email: formData.email }
       });
-      navigate("/checkout");
     } catch (err) {
           let msg = err.message;
           if (err.response) {
@@ -82,7 +82,33 @@ function SubscriptionForm({ clientSecret }) {
       setError(err.message || "Subscription failed");
       setLoading(false);
     }
+    setSuccess(true);
   };
+
+  if (success) {
+    // Set up redirect after 12 seconds
+    const redirectTimer = setTimeout(() => {
+      navigate('/checkout');
+    }, 3500);
+  
+    return (
+      <div className="max-w-lg mx-auto my-10 px-5 text-center">
+        <h1 className="text-3xl font-semibold mb-4">
+          Subscription Successful!
+        </h1>
+        <p className="text-lg text-gray-700 mb-6">
+          Thank you for subscribing. You will receive a confirmation email
+          shortly.
+        </p>
+        <div className="bg-green-100 p-4 rounded-md text-green-800 mb-4">
+          Your subscription has been activated successfully.
+        </div>
+        <p className="text-sm text-gray-500">
+          You will be redirected back to checkout in a few seconds...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto my-10 px-5">
