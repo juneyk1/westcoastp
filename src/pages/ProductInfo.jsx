@@ -122,51 +122,24 @@ const ProductInfo = () => {
       <Header />
       <div className="product-container">
         <div className="img-container">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="product-image"
-            loading="lazy"
-          />
+          <img src={product.image} alt={product.name} className="product-image" />
         </div>
         <div className="product-more">
           <div className="product-details">
-            <h1 className="product-title">{product.name}</h1>
-            <p className="product-description">{product.description}</p>
-            <div className="product-pricing">
-              <span className="original-price">${product.ASP.toFixed(2)}</span>
-              <span className="current-price">
-                ${product.target.toFixed(2)}
+            <p style={{ fontSize: "20px", padding: "5px 0" }}>{product.name}</p>
+            <p style={{ fontSize: "14px", padding: "5px 0" }}>{product.description}</p>
+            <p style={{ fontSize: "18px", padding: "5px 0" }}>
+              Unit Price:
+              <span style={{ textDecoration: "line-through", padding: "0 10px" }}>
+                ${product.ASP}.00
               </span>
-            </div>
-            {product.shippingDate && (
-              <p className="shipping-info">
-                {product.isShippingDateEstimated ? "Estimated " : ""}
-                Ship Date: {product.shippingDate}
-              </p>
-            )}
-            {product.seller && (
-              <p className="seller-info">Sold by: {product.seller}</p>
-            )}
+              <span>${product.target}.00</span>
+            </p>
           </div>
-          <button
-            onClick={handleAddToCart}
-            className="add-to-cart"
-            aria-label="Add to cart"
-          >
+          <button onClick={handleAddToCart} className="add-to-cart">
             Add to Cart
           </button>
-          {cartMessage && (
-            <div className="cart-message">
-              {cartMessage}
-              <button
-                onClick={() => navigate("/cart")}
-                className="view-cart-button"
-              >
-                View Cart
-              </button>
-            </div>
-          )}
+          {cartMessage && <p className="cart-message">{cartMessage}</p>}
         </div>
       </div>
     </div>
