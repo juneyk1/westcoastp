@@ -11,7 +11,9 @@ import About from "./pages/About";
 import Account from "./pages/Account";
 import Appendices from "./pages/Appendices";
 import CheckoutResponse from "./pages/checkout-response";
+import { CartProvider } from "../src/contexts/CartContext";
 import { AuthContextProvider } from "./contexts/AuthContexts";
+
 export default function App() {
   return (
     <AuthContextProvider>

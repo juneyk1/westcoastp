@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate }                  from "react-router-dom";
 import { loadStripe }                   from "@stripe/stripe-js";
@@ -5,6 +6,7 @@ import {
   Elements,
   CardElement,
   useStripe,
+
   useElements
 } from "@stripe/react-stripe-js";
 import { UserAuth }                     from "../contexts/AuthContexts";
@@ -83,6 +85,53 @@ function SubscriptionForm({ clientSecret }) {
       setLoading(false);
     }
   };
+
+  if (subscriptionSuccess) {
+    // Set up redirect after 12 seconds
+    const redirectTimer = setTimeout(() => {
+      navigate('/');
+    }, 12000);
+  
+    return (
+      <div className="max-w-lg mx-auto my-10 px-5 text-center">
+        <h1 className="text-3xl font-semibold mb-4">
+          Subscription Successful!
+        </h1>
+        <p className="text-lg text-gray-700 mb-6">
+          Thank you for subscribing. You will receive a confirmation email
+          shortly.
+        </p>
+        <div className="bg-green-100 p-4 rounded-md text-green-800 mb-4">
+          Your subscription has been activated successfully.
+          {supabaseUpdateSuccess
+            ? " Your account has been updated with premium access."
+            : " However, there was an issue updating your account status. Please contact support."}
+        </div>
+        <p className="text-sm text-gray-500">
+          You will be redirected to the home page in 12 seconds...
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-lg mx-auto my-10 px-5 text-center">
+        Loading your account information...
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="max-w-lg mx-auto my-10 px-5 text-center">
+        <div className="bg-red-100 p-4 rounded-md text-red-800">
+          Error loading your account. Please try refreshing the page or signing
+          in again.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-lg mx-auto my-10 px-5">
