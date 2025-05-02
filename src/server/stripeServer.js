@@ -15,89 +15,125 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 app.use(cors())
-app.use(express.json());
 
-app.post("/check-subscription", async (req, res) => {
-    const { userId } = req.body;
-    const { data, error } = await supabase
-        .from("subscriptions")
-        .select("stripe_status, current_period_end")
-        .eq("user_id", userId)
-        .order("current_period_end", { ascending: false })
-        .limit(1);
-    
-    if (error) return res.status(400).json({ error });
-    const sub = data[0];
-    const active =
-        sub?.stripe_status === "active" &&
-        sub.current_period_end * 1000 > Date.now();
-    res.jason({ active });
-})
 
-app.post("/create-checkout-session", async (req, res) => {
-    const { userId, priceId } = req.body;
-    const customer = await stripe.customers.create({
-      metadata: { userId },
-      email: req.body.email,
-    });
-    const session = await stripe.checkout.sessions.create({
-      customer: customer.id,
-      payment_method_types: ["card"],
-      mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.FRONTEND_URL}/checkout`,
-      cancel_url: `${process.env.FRONTEND_URL}/subscribe`,
-    });
-    res.json({ sessionId: session.id });
-});
-  
 app.post(
     "/webhook",
     bodyParser.raw({ type: "application/json" }),
-    (req, res) => {
-      const sig = req.headers["stripe-signature"];
+    async (req, res) => {
       let event;
       try {
         event = stripe.webhooks.constructEvent(
           req.body,
-          sig,
+          req.headers["stripe-signature"],
           process.env.STRIPE_WEBHOOK_SECRET
         );
       } catch (err) {
+        console.error("Webhook signature failed:", err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
       }
   
-      const handleSub = async (sub) => {
-        const userId = sub.metadata.userId;
-        await supabase.from("subscriptions").upsert({
-          user_id: userId,
+      async function handleSub(sub) {
+        const row = {
+          user_id:                sub.metadata.userId,
           stripe_subscription_id: sub.id,
-          stripe_status: sub.status,
-          current_period_end: sub.current_period_end,
-          price_id: sub.items.data[0].price.id,
-        });
-      };
-  
-      if (event.type === "checkout.session.completed") {
-        stripe
-          .subscriptions.retrieve(event.data.object.subscription)
-          .then(handleSub)
-          .catch(console.error);
+          stripe_status:          sub.status,
+          current_period_end:     sub.current_period_end,
+          price_id:               sub.items.data[0].price.id,
+        };
+        
+        const { data, error } = await supabase.from("stripe_subscriptions").upsert(row);
+        if (error) console.error("Supabase upsert error:", error);
+        else        console.log("Upserted subscription:", data);
       }
+  
       if (
-        event.type === "invoice.payment_succeeded" ||
-        event.type === "invoice.payment_failed"
+        event.type === "customer.subscription.created" ||
+        event.type === "customer.subscription.updated"
       ) {
-        stripe
-          .subscriptions.retrieve(event.data.object.subscription)
-          .then(handleSub)
-          .catch(console.error);
+        await handleSub(event.data.object);
       }
   
       res.json({ received: true });
     }
   );
   
+
+app.use(express.json());
+
+app.post("/check-subscription", async (req, res) => {
+    const { userId } = req.body;
+    const { data, error } = await supabase
+        .from("stripe_subscriptions")
+        .select("stripe_status")
+        .eq("user_id", userId)
+        .limit(1);
+    
+    if (error) return res.status(400).json({ error });
+    const sub = data[0];
+    const active =
+        sub?.stripe_status === "active"
+    res.json({ active });
+})
+
+app.post("/create-subscription-intent", async (req, res) => {
+    const { priceId } = req.body;
+    try {
+        const intent = await stripe.setupIntents.create({
+            payment_method_types: ['card'],
+            usage: 'off_session',
+            payment_method_options: {
+              card: {
+                request_three_d_secure: 'any'
+              }
+            },
+            metadata: { priceId }
+        });
+
+        res.json({ clientSecret: intent.client_secret });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+app.post("/create-subscription", async (req, res) => {
+    const { paymentMethodId, priceId, customerInfo } = req.body;
+    try {
+        const customer = await stripe.customers.create({
+            email: customerInfo.email,
+            metadata: { userId: customerInfo.userId }
+        });
+        
+        await stripe.paymentMethods.attach(paymentMethodId, { customer: customer.id });
+        await stripe.customers.update(customer.id, {
+            invoice_settings: { default_payment_method: paymentMethodId }
+        });
+
+        const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            items: [{ price: priceId }],
+            metadata: { userId: customerInfo.userId }
+         });
+        
+        const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+        const billingDetails = paymentMethod.billing_details;
+        
+        await supabase.from("subscribers").upsert({
+            user_id:               customerInfo.userId,
+            stripe_customer_id:    customer.id,
+            email:                 billingDetails.email || customer.email,
+            name:                  billingDetails.name,
+            billing_details:       billingDetails,
+            default_payment_method: paymentMethodId
+            });
+  
+      res.json({ subscriptionId: subscription.id, status: subscription.status });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+  
+
   app.listen(4242, () =>
     console.log("Stripe server listening")
   );

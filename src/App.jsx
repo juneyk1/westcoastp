@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Checkout from "./pages/checkout";
 import Landing from "./pages/Landing";
 import ProductInfo from "./pages/ProductInfo";
-import SubscriptionReview from "./pages/Subscription";
+import Subscription from "./pages/Subscription";
 import LoginPage from "./pages/LoginPage";
 import SignUp from "./pages/signUp";
 import About from "./pages/About";
@@ -21,7 +21,7 @@ export default function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path="/subscribe" element={<SubscriptionReview />} />
+          <Route path="/subscribe" element={<Subscription />} />
           <Route path="/about" element={<About />} />
           <Route path="/Account" element={<Account />} />
           <Route path="/notices" element={<Appendices />} />
