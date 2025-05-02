@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate }                  from "react-router-dom";
 import { loadStripe }                   from "@stripe/stripe-js";
@@ -5,6 +6,7 @@ import {
   Elements,
   CardElement,
   useStripe,
+
   useElements
 } from "@stripe/react-stripe-js";
 import { UserAuth }                     from "../contexts/AuthContexts";
@@ -19,14 +21,14 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 
 function SubscriptionForm({ clientSecret }) {
-  const stripe    = useStripe();
-  const elements  = useElements();
-  const { user }  = UserAuth();
-  const navigate  = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
+  const { user } = UserAuth();
+  const navigate = useNavigate();
 
-  const [formData, setForm]       = useState({
+  const [formData, setForm] = useState({
     firstName: "",
-    lastName:  "",
+    lastName: "",
     email: user.email,
     billingAddress1: "",
     billingAddress2: "",
@@ -84,7 +86,7 @@ function SubscriptionForm({ clientSecret }) {
     }
     setSuccess(true);
   };
-
+  
   if (success) {
     // Set up redirect after 12 seconds
     const redirectTimer = setTimeout(() => {
@@ -106,6 +108,25 @@ function SubscriptionForm({ clientSecret }) {
         <p className="text-sm text-gray-500">
           You will be redirected back to checkout in a few seconds...
         </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-lg mx-auto my-10 px-5 text-center">
+        Loading your account information...
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="max-w-lg mx-auto my-10 px-5 text-center">
+        <div className="bg-red-100 p-4 rounded-md text-red-800">
+          Error loading your account. Please try refreshing the page or signing
+          in again.
+        </div>
       </div>
     );
   }

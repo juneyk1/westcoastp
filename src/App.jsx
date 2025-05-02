@@ -12,6 +12,7 @@ import Account from "./pages/Account";
 import NoticesOfPrivacyPractices from './pages/Notices';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CheckoutResponse from "./pages/checkout-response";
+import { CartProvider } from "../src/contexts/CartContext";
 import { AuthContextProvider } from "./contexts/AuthContexts";
 import { CartProvider } from "../src/contexts/CartContext";
 export default function App() {

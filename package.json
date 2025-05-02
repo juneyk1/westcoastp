@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "stripe": "stripe listen --forward-to localhost:3000/api/stripe"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -20,7 +21,8 @@
     "@mui/styled-engine-sc": "^6.4.3",
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.2.0",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "^2.49.1",
+    "axios": "^1.9.0",
     "@tailwindcss/vite": "^4.0.5",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
