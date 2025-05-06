@@ -2,49 +2,177 @@ import Header from "./header";
 import React, { useEffect, useState } from "react";
 import Appendices from "./Appendices";
 import { UserAuth } from "../contexts/AuthContexts";
+import { useNavigate } from "react-router-dom";
+import { supabaseClient } from "../services/supabaseClient";
 
 const Account = () => {
-  const { 
-    user, 
-    signOut, 
-    loading, 
+  const {
+    user,
+    signOut,
+    signInUser,
     error,
     addresses,
     addAddress,
     updateAddress,
     removeAddress,
-    setDefaultAddress
+    setDefaultAddress,
+    resetError,
   } = UserAuth();
-  
+
+  const navigate = useNavigate();
+
   const [userEmail, setUserEmail] = useState("");
   const [isAddingAddress, setIsAddingAddress] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [newAddress, setNewAddress] = useState({
-    type: 'both',
-    first_name: '',
-    last_name: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    postal_code: '',
-    country: 'United States',
-    phone: '',
-    is_default: false
+    type: "both",
+    first_name: "",
+    last_name: "",
+    address_line1: "",
+    address_line2: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    country: "United States",
+    phone: "",
+    is_default: false,
   });
+
+  // Login form state
+  const [loginFormData, setLoginFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  // Change password/email form states
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
   const [formError, setFormError] = useState(null);
   const [isRemoving, setIsRemoving] = useState(null);
   const [isSettingDefault, setIsSettingDefault] = useState(null);
+  const [changeFormError, setChangeFormError] = useState(null);
+  const [changeFormSuccess, setChangeFormSuccess] = useState(null);
 
   useEffect(() => {
     if (user) {
       setUserEmail(user.email);
+    } else {
+      navigate('/login');
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewAddress(prev => ({ ...prev, [name]: value }));
+    setNewAddress((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleLoginInputChange = (e) => {
+    const { name, value } = e.target;
+    setLoginFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordDataChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setFormError(null);
+    resetError();
+
+    try {
+      const { success, error } = await signInUser(
+        loginFormData.email,
+        loginFormData.password
+      );
+      if (!success) {
+        throw new Error(error?.message || "Login failed");
+      }
+    } catch (err) {
+      setFormError(err.message);
+    }
+  };
+
+  const handleChangeEmail = async (e) => {
+    e.preventDefault();
+    setChangeFormError(null);
+    setChangeFormSuccess(null);
+
+    if (!newEmail || !newEmail.includes("@")) {
+      setChangeFormError("Please enter a valid email address");
+      return;
+    }
+
+    try {
+      const { error } = await supabaseClient.auth.updateUser({
+        email: newEmail,
+      });
+      if (error) throw error;
+
+      setChangeFormSuccess("Verification email sent. Please check your inbox.");
+      setTimeout(() => {
+        setShowChangeEmail(false);
+      }, 3000);
+    } catch (err) {
+      setChangeFormError(err.message);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setChangeFormError(null);
+    setChangeFormSuccess(null);
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setChangeFormError("New passwords don't match");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setChangeFormError("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      // First verify the current password
+      const { error: signInError } =
+        await supabaseClient.auth.signInWithPassword({
+          email: user.email,
+          password: passwordData.currentPassword,
+        });
+
+      if (signInError) {
+        throw new Error("Current password is incorrect");
+      }
+
+      // Then update the password
+      const { error } = await supabaseClient.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+
+      if (error) throw error;
+
+      setChangeFormSuccess("Password updated successfully");
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+
+      setTimeout(() => {
+        setShowChangePassword(false);
+      }, 3000);
+    } catch (err) {
+      setChangeFormError(err.message);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -57,11 +185,11 @@ const Account = () => {
       } else {
         result = await addAddress(newAddress);
       }
-      
+
       if (!result.success) {
         throw new Error(result.error || "Failed to save address");
       }
-      
+
       setIsAddingAddress(false);
       setEditingAddressId(null);
       resetForm();
@@ -79,62 +207,66 @@ const Account = () => {
 
   const resetForm = () => {
     setNewAddress({
-      type: 'both',
-      first_name: '',
-      last_name: '',
-      address_line1: '',
-      address_line2: '',
-      city: '',
-      state: '',
-      postal_code: '',
-      country: 'United States',
-      phone: '',
-      is_default: false
+      type: "both",
+      first_name: "",
+      last_name: "",
+      address_line1: "",
+      address_line2: "",
+      city: "",
+      state: "",
+      postal_code: "",
+      country: "United States",
+      phone: "",
+      is_default: false,
     });
   };
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      navigate("/");
     } catch (err) {
       console.error("Error signing out:", err);
     }
   };
 
-  if (loading && !user) {
-    return (
-      <div>
-        <Header />
-        <p>Loading account information...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div>
-        <Header />
-        <p>Error: {error}</p>
-      </div>
-    );
-  }
-
+  // When user is not logged in, show login form
   if (!user) {
     return (
       <div>
+
+      </div>
+    );
+  }
+
+
+  if (error && !user) {
+    return (
+      <div>
         <Header />
-        <p>You are not logged in.</p>
+        <div className="max-w-6xl mx-auto p-4">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <p>Error: {error}</p>
+          </div>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Return to Home
+          </button>
+        </div>
+        <Appendices />
       </div>
     );
   }
 
   // Filter addresses by type with default addresses first
   const shippingAddresses = addresses
-    .filter(addr => addr.type === 'shipping' || addr.type === 'both')
+    .filter((addr) => addr.type === "shipping" || addr.type === "both")
     .sort((a, b) => b.is_default - a.is_default);
-    
+
   const billingAddresses = addresses
-    .filter(addr => addr.type === 'billing' || addr.type === 'both')
+    .filter((addr) => addr.type === "billing" || addr.type === "both")
     .sort((a, b) => b.is_default - a.is_default);
 
   return (
@@ -145,29 +277,161 @@ const Account = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Private Info Section */}
-          <div>
+          <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-medium mb-3">PRIVATE INFO</h3>
             <p className="text-gray-600">
               <strong>Email</strong> <br />
               {userEmail}
-              <a href="#" className="text-blue-500 hover:underline ml-2">
+              <button
+                onClick={() => {
+                  setShowChangeEmail(!showChangeEmail);
+                  setShowChangePassword(false);
+                  setChangeFormError(null);
+                  setChangeFormSuccess(null);
+                  setNewEmail(userEmail);
+                }}
+                className="text-blue-500 hover:underline ml-2"
+              >
                 Change
-              </a>
+              </button>
             </p>
+
+            {/* Change Email Form */}
+            {showChangeEmail && (
+              <div className="mt-3 p-4 bg-gray-50 rounded">
+                <h4 className="text-md font-medium mb-2">Change Email</h4>
+                {changeFormError && (
+                  <p className="text-red-500 text-sm mb-2">{changeFormError}</p>
+                )}
+                {changeFormSuccess && (
+                  <p className="text-green-500 text-sm mb-2">
+                    {changeFormSuccess}
+                  </p>
+                )}
+                <form onSubmit={handleChangeEmail}>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      New Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      type="submit"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                    >
+                      Update Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowChangeEmail(false)}
+                      className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
             <p className="text-gray-600 mt-3">
               <strong>Password</strong> <br />
               **********
-              <a href="#" className="text-blue-500 hover:underline ml-2">
+              <button
+                onClick={() => {
+                  setShowChangePassword(!showChangePassword);
+                  setShowChangeEmail(false);
+                  setChangeFormError(null);
+                  setChangeFormSuccess(null);
+                  setPasswordData({
+                    currentPassword: "",
+                    newPassword: "",
+                    confirmPassword: "",
+                  });
+                }}
+                className="text-blue-500 hover:underline ml-2"
+              >
                 Change
-              </a>
+              </button>
             </p>
-            <p className="text-gray-600 mt-3">
-              <strong>Two-factor authentication</strong> <br />
-              <span className="text-green-600 font-medium">Enabled</span>
-              <a href="#" className="text-blue-500 hover:underline ml-2">
-                Disable
-              </a>
-            </p>
+
+            {/* Change Password Form */}
+            {showChangePassword && (
+              <div className="mt-3 p-4 bg-gray-50 rounded">
+                <h4 className="text-md font-medium mb-2">Change Password</h4>
+                {changeFormError && (
+                  <p className="text-red-500 text-sm mb-2">{changeFormError}</p>
+                )}
+                {changeFormSuccess && (
+                  <p className="text-green-500 text-sm mb-2">
+                    {changeFormSuccess}
+                  </p>
+                )}
+                <form onSubmit={handleChangePassword}>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordDataChange}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordDataChange}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      value={passwordData.confirmPassword}
+                      onChange={handlePasswordDataChange}
+                      className="w-full p-2 border rounded"
+                      required
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      type="submit"
+                      className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                    >
+                      Update Password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowChangePassword(false)}
+                      className="px-3 py-1 border rounded hover:bg-gray-100 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
             <button
               onClick={handleSignOut}
               className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
@@ -177,29 +441,35 @@ const Account = () => {
           </div>
 
           {/* Profile Info Section */}
-          <div>
+          <div className="bg-white p-6 rounded-lg shadow-md">
             <h3 className="text-lg font-medium mb-3">
               PROFILE INFO
-              <a href="#" className="text-blue-500 hover:underline ml-2">
+              <a href="/profile" className="text-blue-500 hover:underline ml-2">
                 VIEW PROFILE
               </a>
             </h3>
             <p className="text-gray-600">
               <strong>Username</strong> <br />
-              {user.user_metadata?.username || 'flourish_user'}
+              {user.user_metadata?.username || "flourish_user"}
             </p>
             <p className="text-gray-600 mt-3">
               <strong>Name</strong> <br />
-              {user.user_metadata?.full_name || 'Flourish User'}
+              {user.user_metadata?.full_name || "Flourish User"}
             </p>
             <p className="text-gray-600 mt-3">
               <strong>Organization</strong> <br />
-              {user.user_metadata?.organization || 'Flourish'}
+              {user.user_metadata?.organization || "Flourish"}
             </p>
             <p className="text-gray-600 mt-3">
               <strong>Organization type</strong> <br />
-              {user.user_metadata?.organization_type || 'Private Practice'}
+              {user.user_metadata?.organization_type || "Private Practice"}
             </p>
+            <button
+              onClick={() => navigate("/edit-profile")}
+              className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Edit Profile
+            </button>
           </div>
         </div>
 
@@ -207,13 +477,13 @@ const Account = () => {
         <div className="mt-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-medium">MY ADDRESSES</h3>
-            <button 
+            <button
               onClick={() => {
                 resetForm();
                 setIsAddingAddress(true);
               }}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              disabled={loading}
+              disabled={false}
             >
               Add New Address
             </button>
@@ -222,7 +492,7 @@ const Account = () => {
           {isAddingAddress && (
             <div className="bg-white p-6 rounded-lg shadow-md mb-6">
               <h4 className="text-lg font-medium mb-4">
-                {editingAddressId ? 'Edit Address' : 'Add New Address'}
+                {editingAddressId ? "Edit Address" : "Add New Address"}
               </h4>
               {formError && (
                 <div className="text-red-500 mb-4">{formError}</div>
@@ -230,7 +500,9 @@ const Account = () => {
               <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address Type</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address Type
+                    </label>
                     <select
                       name="type"
                       value={newAddress.type}
@@ -249,13 +521,20 @@ const Account = () => {
                       id="is_default"
                       name="is_default"
                       checked={newAddress.is_default}
-                      onChange={(e) => setNewAddress(prev => ({ ...prev, is_default: e.target.checked }))}
+                      onChange={(e) =>
+                        setNewAddress((prev) => ({
+                          ...prev,
+                          is_default: e.target.checked,
+                        }))
+                      }
                       className="mr-2"
                     />
                     <label htmlFor="is_default">Set as default address</label>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
                     <input
                       type="text"
                       name="first_name"
@@ -266,7 +545,9 @@ const Account = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
                     <input
                       type="text"
                       name="last_name"
@@ -277,7 +558,9 @@ const Account = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address Line 1
+                    </label>
                     <input
                       type="text"
                       name="address_line1"
@@ -288,7 +571,9 @@ const Account = () => {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (Optional)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Address Line 2 (Optional)
+                    </label>
                     <input
                       type="text"
                       name="address_line2"
@@ -298,7 +583,9 @@ const Account = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City
+                    </label>
                     <input
                       type="text"
                       name="city"
@@ -309,7 +596,9 @@ const Account = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      State
+                    </label>
                     <input
                       type="text"
                       name="state"
@@ -320,7 +609,9 @@ const Account = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Zip Code
+                    </label>
                     <input
                       type="text"
                       name="postal_code"
@@ -331,7 +622,9 @@ const Account = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Country
+                    </label>
                     <select
                       name="country"
                       value={newAddress.country}
@@ -345,7 +638,9 @@ const Account = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Phone
+                    </label>
                     <input
                       type="tel"
                       name="phone"
@@ -370,9 +665,13 @@ const Account = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    disabled={loading}
+                    disabled={false}
                   >
-                    {loading ? 'Saving...' : editingAddressId ? 'Update Address' : 'Save Address'}
+                    {false
+                      ? "Saving..."
+                      : editingAddressId
+                        ? "Update Address"
+                        : "Save Address"}
                   </button>
                 </div>
               </form>
@@ -386,32 +685,51 @@ const Account = () => {
               <p className="text-gray-500">No shipping addresses saved</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {shippingAddresses.map(address => (
-                  <div key={address.id} className="border rounded-lg p-4 relative">
+                {shippingAddresses.map((address) => (
+                  <div
+                    key={address.id}
+                    className="border rounded-lg p-4 relative"
+                  >
                     {address.is_default && (
                       <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                         Default
                       </span>
                     )}
                     <div className="mb-2">
-                      <span className={`inline-block px-2 py-1 text-xs rounded ${
-                        address.type === 'both' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {address.type === 'both' ? 'Shipping & Billing' : 'Shipping Only'}
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded ${
+                          address.type === "both"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}
+                      >
+                        {address.type === "both"
+                          ? "Shipping & Billing"
+                          : "Shipping Only"}
                       </span>
                     </div>
-                    <p className="font-medium">{address.first_name} {address.last_name}</p>
+                    <p className="font-medium">
+                      {address.first_name} {address.last_name}
+                    </p>
                     <p>{address.address_line1}</p>
                     {address.address_line2 && <p>{address.address_line2}</p>}
-                    <p>{address.city}, {address.state} {address.postal_code}</p>
+                    <p>
+                      {address.city}, {address.state} {address.postal_code}
+                    </p>
                     <p>{address.country}</p>
-                    {address.phone && <p className="mt-2">Phone: {address.phone}</p>}
-                    
+                    {address.phone && (
+                      <p className="mt-2">Phone: {address.phone}</p>
+                    )}
+
                     <div className="mt-4 flex space-x-2">
                       <button
                         onClick={() => startEditing(address)}
                         className="text-blue-500 hover:underline text-sm"
-                        disabled={loading || isRemoving === address.id || isSettingDefault === address.id}
+                        disabled={
+                          false ||
+                          isRemoving === address.id ||
+                          isSettingDefault === address.id
+                        }
                       >
                         Edit
                       </button>
@@ -427,9 +745,13 @@ const Account = () => {
                           }
                         }}
                         className="text-red-500 hover:underline text-sm"
-                        disabled={loading || isRemoving === address.id || isSettingDefault === address.id}
+                        disabled={
+                          
+                          isRemoving === address.id ||
+                          isSettingDefault === address.id
+                        }
                       >
-                        {isRemoving === address.id ? 'Removing...' : 'Remove'}
+                        {isRemoving === address.id ? "Removing..." : "Remove"}
                       </button>
                       {!address.is_default && (
                         <button
@@ -444,9 +766,15 @@ const Account = () => {
                             }
                           }}
                           className="text-gray-500 hover:underline text-sm"
-                          disabled={loading || isRemoving === address.id || isSettingDefault === address.id}
+                          disabled={
+
+                            isRemoving === address.id ||
+                            isSettingDefault === address.id
+                          }
                         >
-                          {isSettingDefault === address.id ? 'Setting...' : 'Set as default'}
+                          {isSettingDefault === address.id
+                            ? "Setting..."
+                            : "Set as default"}
                         </button>
                       )}
                     </div>
@@ -463,32 +791,51 @@ const Account = () => {
               <p className="text-gray-500">No billing addresses saved</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {billingAddresses.map(address => (
-                  <div key={address.id} className="border rounded-lg p-4 relative">
+                {billingAddresses.map((address) => (
+                  <div
+                    key={address.id}
+                    className="border rounded-lg p-4 relative"
+                  >
                     {address.is_default && (
                       <span className="absolute top-2 right-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
                         Default
                       </span>
                     )}
                     <div className="mb-2">
-                      <span className={`inline-block px-2 py-1 text-xs rounded ${
-                        address.type === 'both' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {address.type === 'both' ? 'Shipping & Billing' : 'Billing Only'}
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded ${
+                          address.type === "both"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-purple-100 text-purple-800"
+                        }`}
+                      >
+                        {address.type === "both"
+                          ? "Shipping & Billing"
+                          : "Billing Only"}
                       </span>
                     </div>
-                    <p className="font-medium">{address.first_name} {address.last_name}</p>
+                    <p className="font-medium">
+                      {address.first_name} {address.last_name}
+                    </p>
                     <p>{address.address_line1}</p>
                     {address.address_line2 && <p>{address.address_line2}</p>}
-                    <p>{address.city}, {address.state} {address.postal_code}</p>
+                    <p>
+                      {address.city}, {address.state} {address.postal_code}
+                    </p>
                     <p>{address.country}</p>
-                    {address.phone && <p className="mt-2">Phone: {address.phone}</p>}
-                    
+                    {address.phone && (
+                      <p className="mt-2">Phone: {address.phone}</p>
+                    )}
+
                     <div className="mt-4 flex space-x-2">
                       <button
                         onClick={() => startEditing(address)}
                         className="text-blue-500 hover:underline text-sm"
-                        disabled={loading || isRemoving === address.id || isSettingDefault === address.id}
+                        disabled={
+
+                          isRemoving === address.id ||
+                          isSettingDefault === address.id
+                        }
                       >
                         Edit
                       </button>
@@ -504,9 +851,13 @@ const Account = () => {
                           }
                         }}
                         className="text-red-500 hover:underline text-sm"
-                        disabled={loading || isRemoving === address.id || isSettingDefault === address.id}
+                        disabled={
+
+                          isRemoving === address.id ||
+                          isSettingDefault === address.id
+                        }
                       >
-                        {isRemoving === address.id ? 'Removing...' : 'Remove'}
+                        {isRemoving === address.id ? "Removing..." : "Remove"}
                       </button>
                       {!address.is_default && (
                         <button
@@ -521,9 +872,15 @@ const Account = () => {
                             }
                           }}
                           className="text-gray-500 hover:underline text-sm"
-                          disabled={loading || isRemoving === address.id || isSettingDefault === address.id}
+                          disabled={
+
+                            isRemoving === address.id ||
+                            isSettingDefault === address.id
+                          }
                         >
-                          {isSettingDefault === address.id ? 'Setting...' : 'Set as default'}
+                          {isSettingDefault === address.id
+                            ? "Setting..."
+                            : "Set as default"}
                         </button>
                       )}
                     </div>
@@ -533,8 +890,48 @@ const Account = () => {
             )}
           </div>
         </div>
+
+        {/* Order History Section */}
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium mb-4">ORDER HISTORY</h3>
+          <div className="border-t pt-4">
+            <a
+              href="/orders"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              View Order History
+            </a>
+          </div>
+        </div>
+
+        {/* Subscription Management Section */}
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium mb-4">MY SUBSCRIPTIONS</h3>
+          <div className="border-t pt-4">
+            <a
+              href="/subscriptions"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Manage Subscriptions
+            </a>
+          </div>
+        </div>
+
+        {/* Payment Methods Section */}
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium mb-4">PAYMENT METHODS</h3>
+          <div className="border-t pt-4">
+            <a
+              href="/payment-methods"
+              className="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Manage Payment Methods
+            </a>
+          </div>
+        </div>
+
       </div>
-      <Appendices/>
+      <Appendices />
     </div>
   );
 };

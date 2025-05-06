@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from "react";
 import { supabaseClient } from "../services/supabaseClient";
 
-
 const AuthContext = createContext(null);
 
 export const AuthContextProvider = ({ children }) => {
@@ -300,40 +299,33 @@ export const AuthContextProvider = ({ children }) => {
     }
   }, [resetError]);
 
+  // Function to force sign out on page load/unload
+  const forceSignOut = useCallback(async () => {
+    try {
+      await supabaseClient.auth.signOut();
+      setUser(null);
+      setSession(null);
+      setAddresses([]);
+    } catch (err) {
+      console.error("Error force signing out:", err);
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     
-    const fetchSession = async () => {
-      if (!isMounted) return;
-      
-      setLoading(true);
-      try {
-        const { data, error: sessionError } = await supabaseClient.auth.getSession();
-        
-        if (sessionError) {
-          console.error("Error fetching session:", sessionError);
-          if (isMounted) setError(sessionError.message);
-          return;
-        }
-
-        if (isMounted) {
-          setSession(data.session);
-          setUser(data.session?.user || null);
-          
-          if (data.session?.user) {
-            await fetchAddresses(data.session.user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Error in auth initialization:", err);
-        if (isMounted) setError(err.message || "Failed to initialize authentication");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
+    // Force sign out on component mount (page load)
+    forceSignOut();
+    
+    // Set up event listener for beforeunload only
+    const handleBeforeUnload = () => {
+      forceSignOut();
     };
+    
+    // Add only the beforeunload event listener
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
-    fetchSession();
-
+    // Set up auth state subscription (only active after initial sign out)
     const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(
       async (_event, currentSession) => {
         if (!isMounted) return;
@@ -349,11 +341,14 @@ export const AuthContextProvider = ({ children }) => {
       }
     );
 
+    // Clean up event listener and subscription
     return () => {
       isMounted = false;
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       subscription?.unsubscribe();
+      forceSignOut();  // Also called on unmount
     };
-  }, [fetchAddresses]);
+  }, [fetchAddresses, forceSignOut]);
 
   const contextValue = {
     // Auth state
