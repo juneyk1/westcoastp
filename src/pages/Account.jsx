@@ -1,104 +1,96 @@
 import Header from "./header";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import Appendices from "./Appendices";
-import { UserAuth } from "../contexts/AuthContexts";
+import { useUserAuth } from "../contexts/AuthContexts";
 import { useNavigate } from "react-router-dom";
 import { supabaseClient } from "../services/supabaseClient";
+import { atom, useAtom } from "jotai";
+
+// Atoms for state management
+const userEmailAtom = atom("");
+const isAddingAddressAtom = atom(false);
+const editingAddressIdAtom = atom(null);
+const newAddressAtom = atom({
+  type: "both",
+  first_name: "",
+  last_name: "",
+  address_line1: "",
+  address_line2: "",
+  city: "",
+  state: "",
+  postal_code: "",
+  country: "United States",
+  phone: "",
+  is_default: false,
+});
+
+// Change password/email form atoms
+const showChangeEmailAtom = atom(false);
+const showChangePasswordAtom = atom(false);
+const newEmailAtom = atom("");
+const passwordDataAtom = atom({
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+
+const formErrorAtom = atom(null);
+const isRemovingAtom = atom(null);
+const isSettingDefaultAtom = atom(null);
+const changeFormErrorAtom = atom(null);
+const changeFormSuccessAtom = atom(null);
 
 const Account = () => {
   const {
     user,
     signOut,
-    signInUser,
-    error,
+    error: authError,
+    resetError,
     addresses,
     addAddress,
     updateAddress,
     removeAddress,
     setDefaultAddress,
-    resetError,
-  } = UserAuth();
+    isLoading: authLoading,
+  } = useUserAuth();
 
   const navigate = useNavigate();
 
-  const [userEmail, setUserEmail] = useState("");
-  const [isAddingAddress, setIsAddingAddress] = useState(false);
-  const [editingAddressId, setEditingAddressId] = useState(null);
-  const [newAddress, setNewAddress] = useState({
-    type: "both",
-    first_name: "",
-    last_name: "",
-    address_line1: "",
-    address_line2: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "United States",
-    phone: "",
-    is_default: false,
-  });
-
-  // Login form state
-  const [loginFormData, setLoginFormData] = useState({
-    email: "",
-    password: "",
-  });
-
-  // Change password/email form states
-  const [showChangeEmail, setShowChangeEmail] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [newEmail, setNewEmail] = useState("");
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
-  const [formError, setFormError] = useState(null);
-  const [isRemoving, setIsRemoving] = useState(null);
-  const [isSettingDefault, setIsSettingDefault] = useState(null);
-  const [changeFormError, setChangeFormError] = useState(null);
-  const [changeFormSuccess, setChangeFormSuccess] = useState(null);
+  // State atoms
+  const [userEmail, setUserEmail] = useAtom(userEmailAtom);
+  const [isAddingAddress, setIsAddingAddress] = useAtom(isAddingAddressAtom);
+  const [editingAddressId, setEditingAddressId] = useAtom(editingAddressIdAtom);
+  const [newAddress, setNewAddress] = useAtom(newAddressAtom);
+  const [showChangeEmail, setShowChangeEmail] = useAtom(showChangeEmailAtom);
+  const [showChangePassword, setShowChangePassword] = useAtom(
+    showChangePasswordAtom
+  );
+  const [newEmail, setNewEmail] = useAtom(newEmailAtom);
+  const [passwordData, setPasswordData] = useAtom(passwordDataAtom);
+  const [formError, setFormError] = useAtom(formErrorAtom);
+  const [isRemoving, setIsRemoving] = useAtom(isRemovingAtom);
+  const [isSettingDefault, setIsSettingDefault] = useAtom(isSettingDefaultAtom);
+  const [changeFormError, setChangeFormError] = useAtom(changeFormErrorAtom);
+  const [changeFormSuccess, setChangeFormSuccess] = useAtom(
+    changeFormSuccessAtom
+  );
 
   useEffect(() => {
     if (user) {
       setUserEmail(user.email);
     } else {
-      navigate('/login');
+      navigate("/login");
     }
-  }, [user, navigate]);
+  }, [user, navigate, setUserEmail]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewAddress((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleLoginInputChange = (e) => {
-    const { name, value } = e.target;
-    setLoginFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handlePasswordDataChange = (e) => {
     const { name, value } = e.target;
     setPasswordData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setFormError(null);
-    resetError();
-
-    try {
-      const { success, error } = await signInUser(
-        loginFormData.email,
-        loginFormData.password
-      );
-      if (!success) {
-        throw new Error(error?.message || "Login failed");
-      }
-    } catch (err) {
-      setFormError(err.message);
-    }
   };
 
   const handleChangeEmail = async (e) => {
@@ -142,7 +134,6 @@ const Account = () => {
     }
 
     try {
-      // First verify the current password
       const { error: signInError } =
         await supabaseClient.auth.signInWithPassword({
           email: user.email,
@@ -153,7 +144,6 @@ const Account = () => {
         throw new Error("Current password is incorrect");
       }
 
-      // Then update the password
       const { error } = await supabaseClient.auth.updateUser({
         password: passwordData.newPassword,
       });
@@ -230,23 +220,21 @@ const Account = () => {
     }
   };
 
-  // When user is not logged in, show login form
   if (!user) {
     return (
-      <div>
-
+      <div className="flex justify-center items-center h-screen">
+        Loading...
       </div>
     );
   }
 
-
-  if (error && !user) {
+  if (authError && !user) {
     return (
       <div>
         <Header />
         <div className="max-w-6xl mx-auto p-4">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <p>Error: {error}</p>
+            <p>Error: {authError}</p>
           </div>
           <button
             onClick={() => navigate("/")}
@@ -483,7 +471,6 @@ const Account = () => {
                 setIsAddingAddress(true);
               }}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              disabled={false}
             >
               Add New Address
             </button>
@@ -665,13 +652,8 @@ const Account = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    disabled={false}
                   >
-                    {false
-                      ? "Saving..."
-                      : editingAddressId
-                        ? "Update Address"
-                        : "Save Address"}
+                    {editingAddressId ? "Update Address" : "Save Address"}
                   </button>
                 </div>
               </form>
@@ -726,7 +708,6 @@ const Account = () => {
                         onClick={() => startEditing(address)}
                         className="text-blue-500 hover:underline text-sm"
                         disabled={
-                          false ||
                           isRemoving === address.id ||
                           isSettingDefault === address.id
                         }
@@ -746,7 +727,6 @@ const Account = () => {
                         }}
                         className="text-red-500 hover:underline text-sm"
                         disabled={
-                          
                           isRemoving === address.id ||
                           isSettingDefault === address.id
                         }
@@ -767,7 +747,6 @@ const Account = () => {
                           }}
                           className="text-gray-500 hover:underline text-sm"
                           disabled={
-
                             isRemoving === address.id ||
                             isSettingDefault === address.id
                           }
@@ -832,7 +811,6 @@ const Account = () => {
                         onClick={() => startEditing(address)}
                         className="text-blue-500 hover:underline text-sm"
                         disabled={
-
                           isRemoving === address.id ||
                           isSettingDefault === address.id
                         }
@@ -852,7 +830,6 @@ const Account = () => {
                         }}
                         className="text-red-500 hover:underline text-sm"
                         disabled={
-
                           isRemoving === address.id ||
                           isSettingDefault === address.id
                         }
@@ -873,7 +850,6 @@ const Account = () => {
                           }}
                           className="text-gray-500 hover:underline text-sm"
                           disabled={
-
                             isRemoving === address.id ||
                             isSettingDefault === address.id
                           }
@@ -929,7 +905,6 @@ const Account = () => {
             </a>
           </div>
         </div>
-
       </div>
       <Appendices />
     </div>

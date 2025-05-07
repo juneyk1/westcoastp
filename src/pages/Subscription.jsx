@@ -1,29 +1,25 @@
-
 import React, { useEffect, useState } from "react";
-import { useNavigate }                  from "react-router-dom";
-import { loadStripe }                   from "@stripe/stripe-js";
+import { useNavigate } from "react-router-dom";
+import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   CardElement,
   useStripe,
-
-  useElements
+  useElements,
 } from "@stripe/react-stripe-js";
-import { UserAuth }                     from "../contexts/AuthContexts";
+import { useUserAuth } from "../contexts/AuthContexts";
 import {
   createSetupIntent,
   createSubscription,
-  checkSubscription
+  checkSubscription,
 } from "../services/stripeClient";
 
-
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
-
 
 function SubscriptionForm({ clientSecret }) {
   const stripe = useStripe();
   const elements = useElements();
-  const { user } = UserAuth();
+  const { user } = UseUserAuth();
   const navigate = useNavigate();
 
   const [formData, setForm] = useState({
@@ -32,18 +28,18 @@ function SubscriptionForm({ clientSecret }) {
     email: user.email,
     billingAddress1: "",
     billingAddress2: "",
-    zipCode: ""
+    zipCode: "",
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
+    setForm((f) => ({ ...f, [name]: value }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -54,10 +50,10 @@ function SubscriptionForm({ clientSecret }) {
         payment_method: {
           card: elements.getElement(CardElement),
           billing_details: {
-            name:  `${formData.firstName} ${formData.lastName}`,
-            email: formData.email
-          }
-        }
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+          },
+        },
       }
     );
 
@@ -70,29 +66,29 @@ function SubscriptionForm({ clientSecret }) {
     try {
       await createSubscription({
         paymentMethodId: setupIntent.payment_method,
-        priceId:         import.meta.env.VITE_STRIPE_PRICE_ID,
-        customerInfo:    { userId: user.id, email: formData.email }
+        priceId: import.meta.env.VITE_STRIPE_PRICE_ID,
+        customerInfo: { userId: user.id, email: formData.email },
       });
     } catch (err) {
-          let msg = err.message;
-          if (err.response) {
-            try {
-              const body = await err.response.json();
-              msg = body.error || msg;
-            } catch {}
+      let msg = err.message;
+      if (err.response) {
+        try {
+          const body = await err.response.json();
+          msg = body.error || msg;
+        } catch {}
       }
       setError(err.message || "Subscription failed");
       setLoading(false);
     }
     setSuccess(true);
   };
-  
+
   if (success) {
     // Set up redirect after 12 seconds
     const redirectTimer = setTimeout(() => {
-      navigate('/checkout-response');
+      navigate("/checkout-response");
     }, 3500);
-  
+
     return (
       <div className="max-w-lg mx-auto my-10 px-5 text-center">
         <h1 className="text-3xl font-semibold mb-4">
@@ -176,9 +172,7 @@ function SubscriptionForm({ clientSecret }) {
 
         {/* Email */}
         <div className="flex flex-col space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Email
-          </label>
+          <label className="text-sm font-medium text-gray-700">Email</label>
           <input
             type="email"
             name="email"
@@ -263,8 +257,8 @@ function SubscriptionForm({ clientSecret }) {
 
 export default function Subscription() {
   const [clientSecret, setClientSecret] = useState("");
-  const { user }                        = UserAuth();
-  const navigate                        = useNavigate();
+  const { user } = useUserAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return navigate("/login");

@@ -1,52 +1,48 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import Header from "./header";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import Appendices from "./Appendices";
-import { UserAuth } from "../contexts/AuthContexts";
+import { useUserAuth, defaultShippingAddressAtom, defaultBillingAddressAtom } from "../contexts/AuthContexts";
+import { useAtom } from "jotai";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, setItems } = useCart();
-  const { user, addresses } = UserAuth();
-  const [selectedShippingAddress, setSelectedShippingAddress] = useState(null);
-  const [selectedBillingAddress, setSelectedBillingAddress] = useState(null);
+  const { 
+    user, 
+    addresses, 
+    isLoading: authLoading 
+  } = useUserAuth();
+  
+  const [defaultShippingAddress] = useAtom(defaultShippingAddressAtom);
+  const [defaultBillingAddress] = useAtom(defaultBillingAddressAtom);
+  const [selectedShippingAddress, setSelectedShippingAddress] = React.useState(null);
+  const [selectedBillingAddress, setSelectedBillingAddress] = React.useState(null);
 
-  // Filter addresses by type with default addresses first
-  const shippingAddresses = addresses
-    .filter(addr => addr.type === 'shipping' || addr.type === 'both')
-    .sort((a, b) => b.is_default - a.is_default);
-    
-  const billingAddresses = addresses
-    .filter(addr => addr.type === 'billing' || addr.type === 'both')
-    .sort((a, b) => b.is_default - a.is_default);
-
-  // Set default addresses when addresses load
+  // Redirect if not logged in
   useEffect(() => {
-    if (shippingAddresses.length > 0) {
-      const defaultShipping = shippingAddresses.find(addr => addr.is_default) || shippingAddresses[0];
-      setSelectedShippingAddress(defaultShipping.id);
+    if (!user && !authLoading) {
+      navigate("/signup", { state: { from: "/checkout" } });
     }
-    if (billingAddresses.length > 0) {
-      const defaultBilling = billingAddresses.find(addr => addr.is_default) || billingAddresses[0];
-      setSelectedBillingAddress(defaultBilling.id);
+  }, [user, authLoading, navigate]);
+
+  // Set default addresses when they're available
+  useEffect(() => {
+    if (defaultShippingAddress) {
+      setSelectedShippingAddress(defaultShippingAddress.id);
     }
-  }, [addresses]);
+    if (defaultBillingAddress) {
+      setSelectedBillingAddress(defaultBillingAddress.id);
+    }
+  }, [defaultShippingAddress, defaultBillingAddress]);
 
   function calculateSubtotal() {
-    let subtotal = 0;
-    for (const item of items) {
-      subtotal += item.price * item.quantity;
-    }
-    return subtotal;
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 
   function calculateOGSubtotal() {
-    let subtotal = 0;
-    for (const item of items) {
-      subtotal += item.ogPrice * item.quantity;
-    }
-    return subtotal;
+    return items.reduce((sum, item) => sum + (item.ogPrice * item.quantity), 0);
   }
 
   const subtotal = calculateSubtotal();
@@ -71,11 +67,26 @@ export default function Checkout() {
       alert("Please select both shipping and billing addresses");
       return;
     }
-    // Here you would typically pass the selected addresses to your order processing
-    console.log("Selected Shipping Address ID:", selectedShippingAddress);
-    console.log("Selected Billing Address ID:", selectedBillingAddress);
-    navigate("/subscribe");
+    navigate("/subscribe", { 
+      state: { 
+        shippingAddressId: selectedShippingAddress,
+        billingAddressId: selectedBillingAddress
+      }
+    });
   };
+
+  if (authLoading) {
+    return <div className="max-w-6xl mx-auto p-4">Loading...</div>;
+  }
+
+  // Filter addresses by type
+  const shippingAddresses = addresses.filter(addr => 
+    addr.type === 'shipping' || addr.type === 'both'
+  );
+  
+  const billingAddresses = addresses.filter(addr => 
+    addr.type === 'billing' || addr.type === 'both'
+  );
 
   return (
     <div className="max-w-6xl mx-auto">

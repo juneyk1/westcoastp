@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { UserAuth } from "../contexts/AuthContexts";
+import { useUserAuth } from "../contexts/AuthContexts";
 import {
   Card,
   CardContent,
@@ -28,7 +28,7 @@ export default function SignUp() {
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const navigate = useNavigate();
-  const { signUpNewUser, error: authError, resetError, } = UserAuth();
+  const { signUpNewUser, error: authError, resetError, } = useUserAuth();
 
   useEffect(() => {
     if (authError) {

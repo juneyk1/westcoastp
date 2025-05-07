@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { Mail, Lock, Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { UserAuth } from "../contexts/AuthContexts";
+import { useUserAuth } from "../contexts/AuthContexts";
 import Header from "./header";
 import Appendices from "./Appendices";
 import "./LoginPage.css";
@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [passwordStrength, setPasswordStrength] = useState(0);
 
   const navigate = useNavigate();
-  const { signInUser, error: authError, resetError, loading } = UserAuth();
+  const { signInUser, error: authError, resetError, loading } = useUserAuth();
 
   // Debug logging to trace loading state
   useEffect(() => {
