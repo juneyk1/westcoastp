@@ -1,15 +1,23 @@
 import { atom, useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { supabaseClient } from "../services/supabaseClient";
+import supabaseClient from "../services/supabaseClient";
 import { useRef, useEffect, useMemo } from "react";
 import { debounce } from "lodash";
 import { useCallback } from "react";
+
+// Create a storage atom for caching addresses with TTL
+const addressCacheAtom = atomWithStorage('address-cache', {
+  addresses: null,
+  lastFetch: 0,
+  userId: null
+});
+
 // Atoms
 export const sessionAtom = atom(null);
 export const userAtom = atom(null);
 export const addressesAtom = atom([]);
 export const authErrorAtom = atom(null);
-export const authLoadingAtom = atom(true);
+export const authLoadingAtom = atom(false); // Default to false to prevent unnecessary loading states
 
 // Derived atoms
 export const defaultShippingAddressAtom = atom((get) =>
@@ -26,58 +34,50 @@ export const defaultBillingAddressAtom = atom((get) =>
   )
 );
 
-// Address operations
-
+// Request tracking - moved outside hooks for stability
 let requestCount = 0;
 const logRequest = (method) => {
   requestCount++;
   console.log(`Supabase Request #${requestCount}: ${method}`);
 };
 
+// Address operations
 export const useAddressActions = () => {
   const [addresses, setAddresses] = useAtom(addressesAtom);
   const [user] = useAtom(userAtom);
   const [isLoading, setIsLoading] = useAtom(authLoadingAtom);
   const [, setError] = useAtom(authErrorAtom);
+  const [addressCache, setAddressCache] = useAtom(addressCacheAtom);
+  
+  // Store for pending updates
+  const pendingUpdatesRef = useRef({});
 
-  // Persistent cache
-  const cache = useRef({
-    addresses: null,
-    lastFetch: 0,
-    pendingUpdates: {},
-  });
-
-  // Cache addresses
-  useEffect(() => {
-    cache.current.addresses = addresses;
-  }, [addresses]);
-
-  // Debug effect - log when this hook recreates
-  useEffect(() => {
-    console.log("AddressActions hook initialized");
-    return () => console.log("AddressActions hook cleaned up");
-  }, []);
-
-  // Stable function references
+  // Fetch addresses with proper caching
+  // Stable reference with useCallback and memoized dependencies
   const fetchAddresses = useCallback(
     async (userId, forceRefresh = false) => {
       if (!userId) {
-        setError("User ID is required");
         return { success: false, error: new Error("User ID is required") };
       }
 
-      // Return cached data if fresh (5 minute cache)
+
       const now = Date.now();
-      if (
-        !forceRefresh &&
-        cache.current.addresses &&
-        now - cache.current.lastFetch < 300000
-      ) {
-        return { success: true, data: cache.current.addresses };
+      const cacheValid = 
+        !forceRefresh && 
+        addressCache.addresses && 
+        addressCache.userId === userId &&
+        now - addressCache.lastFetch < 300000;
+      
+      if (cacheValid) {
+        // Use cached data without triggering a new request
+        setAddresses(addressCache.addresses);
+        return { success: true, data: addressCache.addresses };
       }
 
+      // Only make an API call if cache is invalid
       logRequest("fetchAddresses");
       setIsLoading(true);
+      
       try {
         const { data, error } = await supabaseClient
           .from("addresses")
@@ -88,8 +88,15 @@ export const useAddressActions = () => {
         if (error) throw error;
 
         const result = data || [];
+        
+        // Update both the atom and the cache
         setAddresses(result);
-        cache.current.lastFetch = now;
+        setAddressCache({
+          addresses: result,
+          lastFetch: now,
+          userId
+        });
+        
         return { success: true, data: result };
       } catch (err) {
         setError(err?.message || "Fetch failed");
@@ -98,51 +105,67 @@ export const useAddressActions = () => {
         setIsLoading(false);
       }
     },
-    [setAddresses, setError, setIsLoading]
+    [setAddresses, setError, setIsLoading, addressCache, setAddressCache]
   );
 
-  // Batch updates with 500ms debounce
+  // Process batched updates
   const processUpdates = useCallback(async () => {
-    if (Object.keys(cache.current.pendingUpdates).length === 0) return;
-
-    const updates = { ...cache.current.pendingUpdates };
-    cache.current.pendingUpdates = {};
+    const updates = pendingUpdatesRef.current;
+    const updateValues = Object.values(updates);
+    
+    if (updateValues.length === 0) return;
+    
+    // Clear pending updates before processing
+    pendingUpdatesRef.current = {};
 
     logRequest("batchUpdate");
     setIsLoading(true);
+    
     try {
       const { data, error } = await supabaseClient
         .from("addresses")
-        .upsert(Object.values(updates))
+        .upsert(updateValues)
         .select();
 
       if (error) throw error;
 
-      setAddresses((prev) =>
-        prev.map((addr) =>
-          updates[addr.id] ? { ...addr, ...updates[addr.id] } : addr
-        )
+      // Update addresses in state and cache
+      const updatedAddresses = addresses.map((addr) =>
+        updates[addr.id] ? { ...addr, ...updates[addr.id] } : addr
       );
+      
+      setAddresses(updatedAddresses);
+      setAddressCache(prev => ({
+        ...prev,
+        addresses: updatedAddresses
+      }));
+      
       return { success: true, data };
     } catch (err) {
       setError(err?.message || "Batch update failed");
       // Requeue failed updates
-      cache.current.pendingUpdates = {
-        ...cache.current.pendingUpdates,
-        ...updates,
+      pendingUpdatesRef.current = {
+        ...pendingUpdatesRef.current,
+        ...updates
       };
       return { success: false, error: err };
     } finally {
       setIsLoading(false);
     }
-  }, [setAddresses, setError, setIsLoading]);
+  }, [addresses, setAddresses, setError, setIsLoading, setAddressCache]);
 
-  // Debounced processor
-  const debouncedProcessUpdates = useRef();
+  // Create stable debounced function that persists across renders
+  const debouncedProcessUpdates = useMemo(
+    () => debounce(() => {
+      processUpdates();
+    }, 500),
+    [processUpdates]
+  );
+
+  // Cleanup effect for debounced function
   useEffect(() => {
-    debouncedProcessUpdates.current = debounce(processUpdates, 500);
-    return () => debouncedProcessUpdates.current?.cancel();
-  }, [processUpdates]);
+    return () => debouncedProcessUpdates.cancel();
+  }, [debouncedProcessUpdates]);
 
   const addAddress = useCallback(
     async (addressData) => {
@@ -153,6 +176,7 @@ export const useAddressActions = () => {
 
       logRequest("addAddress");
       setIsLoading(true);
+      
       try {
         const { data, error } = await supabaseClient
           .from("addresses")
@@ -162,7 +186,15 @@ export const useAddressActions = () => {
 
         if (error) throw error;
 
-        setAddresses((prev) => [...prev, data]);
+        const updatedAddresses = [...addresses, data];
+        setAddresses(updatedAddresses);
+        
+        // Update cache with new address
+        setAddressCache(prev => ({
+          ...prev,
+          addresses: updatedAddresses
+        }));
+        
         return { success: true, data };
       } catch (err) {
         setError(err?.message || "Add address failed");
@@ -171,32 +203,42 @@ export const useAddressActions = () => {
         setIsLoading(false);
       }
     },
-    [user?.id, setAddresses, setError, setIsLoading]
+    [user?.id, addresses, setAddresses, setError, setIsLoading, setAddressCache]
   );
 
   const updateAddress = useCallback(
     (id, updates) => {
-      cache.current.pendingUpdates[id] = { id, ...updates };
-      debouncedProcessUpdates.current();
+      // Queue update in the pending updates
+      pendingUpdatesRef.current[id] = { id, ...updates };
+      debouncedProcessUpdates();
 
-      // Optimistic update
-      setAddresses((prev) =>
-        prev.map((addr) => (addr.id === id ? { ...addr, ...updates } : addr))
+      // Optimistic update to state
+      const updatedAddresses = addresses.map((addr) => 
+        addr.id === id ? { ...addr, ...updates } : addr
       );
+      
+      setAddresses(updatedAddresses);
+      
+      // Also update the cache optimistically
+      setAddressCache(prev => ({
+        ...prev,
+        addresses: updatedAddresses
+      }));
 
       return { success: true };
     },
-    [setAddresses]
+    [addresses, setAddresses, debouncedProcessUpdates, setAddressCache]
   );
 
   const removeAddress = useCallback(
     async (id) => {
       logRequest("removeAddress");
       setIsLoading(true);
+      
       try {
         // Remove from pending updates if exists
-        if (cache.current.pendingUpdates[id]) {
-          delete cache.current.pendingUpdates[id];
+        if (pendingUpdatesRef.current[id]) {
+          delete pendingUpdatesRef.current[id];
         }
 
         const { error } = await supabaseClient
@@ -206,7 +248,15 @@ export const useAddressActions = () => {
 
         if (error) throw error;
 
-        setAddresses((prev) => prev.filter((addr) => addr.id !== id));
+        const updatedAddresses = addresses.filter((addr) => addr.id !== id);
+        setAddresses(updatedAddresses);
+        
+        // Update cache after removal
+        setAddressCache(prev => ({
+          ...prev,
+          addresses: updatedAddresses
+        }));
+        
         return { success: true };
       } catch (err) {
         setError(err?.message || "Delete address failed");
@@ -215,14 +265,13 @@ export const useAddressActions = () => {
         setIsLoading(false);
       }
     },
-    [setAddresses, setError, setIsLoading]
+    [addresses, setAddresses, setError, setIsLoading, setAddressCache]
   );
 
   const setDefaultAddress = useCallback(
     async (id) => {
-      const addressToUpdate = cache.current.addresses?.find(
-        (addr) => addr.id === id
-      );
+      const addressToUpdate = addresses.find((addr) => addr.id === id);
+      
       if (!addressToUpdate) {
         setError("Address not found");
         return { success: false, error: new Error("Address not found") };
@@ -236,6 +285,7 @@ export const useAddressActions = () => {
 
       logRequest("setDefaultAddress");
       setIsLoading(true);
+      
       try {
         const { data, error } = await supabaseClient.rpc(
           "set_default_address",
@@ -248,14 +298,20 @@ export const useAddressActions = () => {
 
         if (error) throw error;
 
-        setAddresses((prev) =>
-          prev.map((addr) => ({
-            ...addr,
-            is_default:
-              addr.id === id ||
-              (addr.type !== addressToUpdate.type && addr.is_default),
-          }))
-        );
+        const updatedAddresses = addresses.map((addr) => ({
+          ...addr,
+          is_default:
+            addr.id === id ||
+            (addr.type !== addressToUpdate.type && addr.is_default),
+        }));
+        
+        setAddresses(updatedAddresses);
+        
+        // Update cache with default address change
+        setAddressCache(prev => ({
+          ...prev,
+          addresses: updatedAddresses
+        }));
 
         return { success: true, data };
       } catch (err) {
@@ -265,7 +321,7 @@ export const useAddressActions = () => {
         setIsLoading(false);
       }
     },
-    [user?.id, setAddresses, setError, setIsLoading]
+    [addresses, user?.id, setAddresses, setError, setIsLoading, setAddressCache]
   );
 
   return {
@@ -285,10 +341,11 @@ export const useAuthActions = () => {
   const [, setAddresses] = useAtom(addressesAtom);
   const [, setError] = useAtom(authErrorAtom);
   const [, setIsLoading] = useAtom(authLoadingAtom);
+  const [, setAddressCache] = useAtom(addressCacheAtom);
 
-  const resetError = () => setError(null);
+  const resetError = useCallback(() => setError(null), [setError]);
 
-  const signUpNewUser = async (email, password) => {
+  const signUpNewUser = useCallback(async (email, password) => {
     resetError();
     setIsLoading(true);
 
@@ -322,9 +379,9 @@ export const useAuthActions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resetError, setIsLoading, setError]);
 
-  const signInUser = async (email, password) => {
+  const signInUser = useCallback(async (email, password) => {
     resetError();
     setIsLoading(true);
 
@@ -352,9 +409,9 @@ export const useAuthActions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resetError, setIsLoading, setError]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     resetError();
     setIsLoading(true);
 
@@ -363,10 +420,11 @@ export const useAuthActions = () => {
       setUser(null);
       setSession(null);
       setAddresses([]);
-
-      // Clear localStorage
-      localStorage.removeItem("sb-auth-token");
-      localStorage.removeItem("sb-auth-refresh-token");
+      setAddressCache({
+        addresses: null,
+        lastFetch: 0,
+        userId: null
+      });
 
       // Server sign out
       const { error: signOutError } = await supabaseClient.auth.signOut();
@@ -388,7 +446,7 @@ export const useAuthActions = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resetError, setIsLoading, setUser, setSession, setAddresses, setAddressCache, setError]);
 
   return {
     signUpNewUser,
@@ -427,42 +485,61 @@ export const AuthProvider = ({ children }) => {
   const [, setAddresses] = useAtom(addressesAtom);
   const [, setError] = useAtom(authErrorAtom);
   const [, setIsLoading] = useAtom(authLoadingAtom);
+  const [addressCache, setAddressCache] = useAtom(addressCacheAtom);
+  
+  // Use addressActions inside a memo to maintain stable reference
   const { fetchAddresses } = useAddressActions();
+  
+  // Reference to track initialization
+  const isInitialized = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
-    const handleBeforeUnload = async () => {
-      await supabaseClient.auth.signOut();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
+    // Auth state change handler
+    const handleAuthChange = async (event, currentSession) => {
       if (!isMounted) return;
 
+      const userId = currentSession?.user?.id;
       setSession(currentSession);
       setUser(currentSession?.user || null);
-      if (currentSession?.user?.id) {
-        await fetchAddresses(currentSession.user.id);
+      
+      if (userId) {
+        // Only fetch addresses if we have a new user or cached user is different
+        if (!addressCache.addresses || addressCache.userId !== userId) {
+          await fetchAddresses(userId);
+        } else {
+          // Just use the cached addresses without fetching
+          setAddresses(addressCache.addresses);
+        }
       } else {
         setAddresses([]);
       }
-      setIsLoading(false);
-    });
+    };
 
+    // Setup auth subscription
+    const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(handleAuthChange);
+
+    // Initial session check - only run once
     const checkInitialSession = async () => {
+      if (isInitialized.current) return;
+      isInitialized.current = true;
+      
       setIsLoading(true);
       try {
-        const {
-          data: { session: initialSession },
-        } = await supabaseClient.auth.getSession();
+        const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
+        const userId = initialSession?.user?.id;
+        
         setSession(initialSession);
         setUser(initialSession?.user || null);
-        if (initialSession?.user?.id) {
-          await fetchAddresses(initialSession.user.id);
+        
+        if (userId) {
+          // Use cache if available and for the same user
+          if (addressCache.addresses && addressCache.userId === userId) {
+            setAddresses(addressCache.addresses);
+          } else {
+            await fetchAddresses(userId);
+          }
         } else {
           setAddresses([]);
         }
@@ -478,7 +555,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => {
       isMounted = false;
-      window.removeEventListener("beforeunload", handleBeforeUnload);
       subscription?.unsubscribe();
     };
   }, [
@@ -488,6 +564,8 @@ export const AuthProvider = ({ children }) => {
     setIsLoading,
     setError,
     fetchAddresses,
+    addressCache,
+    setAddressCache
   ]);
 
   return children;

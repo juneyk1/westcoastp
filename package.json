@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 5175",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "stripe": "stripe listen --forward-to localhost:3000/api/stripe"
+    "preview": "vite preview --port 5175",
+    "stripe": "stripe listen --forward-to localhost:4242/api/stripe"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
