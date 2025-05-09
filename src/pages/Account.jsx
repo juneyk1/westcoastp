@@ -136,6 +136,24 @@ const Account = () => {
   const billingAddresses = addresses
     .filter(addr => addr.type === 'billing' || addr.type === 'both')
     .sort((a, b) => b.is_default - a.is_default);
+  
+  const [subscription, setSubscription] = useState(null);
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data, error: subError } = await supabaseClient
+        .from("stripe_subscriptions")
+        .select("stripe_status, created_at")
+        .eq("user_id", user.id)
+        .limit(1)
+        .single();
+      if (subError) {
+        console.error("Error fetching subscription:", subError);
+      } else {
+        setSubscription(data);
+      }
+    })();
+  }, [user]);
 
   return (
     <div>
@@ -533,6 +551,22 @@ const Account = () => {
             )}
           </div>
         </div>
+                {/* Subscription Summary */}
+        {subscription && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-lg font-medium mb-2">Subscription</h3>
+            <p><strong>Status:</strong> {subscription.stripe_status}</p>
+            <p>
+              <strong>Next payment:</strong>{" "}
+              June 09, 2025
+              {/* {new Date(subscription.current_period_end * 1000).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              })} */}
+            </p>
+          </div>
+        )}
       </div>
       <Appendices/>
     </div>
