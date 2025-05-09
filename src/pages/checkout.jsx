@@ -34,9 +34,16 @@ export default function Checkout() {
 
   function handleQuantityChange(itemSku, newQuantity) {
     if (newQuantity < 0) return;
-    setItems(items.map(item => 
-      item.sku === itemSku ? { ...item, quantity: newQuantity } : item
-    ));
+
+    if (newQuantity === 0) {
+      // Remove the item from the cart
+      setItems(items.filter(item => item.sku !== itemSku));
+    } else {
+      // Update the quantity
+      setItems(items.map(item => 
+        item.sku === itemSku ? { ...item, quantity: newQuantity } : item
+      ));
+    }
   }
 
 
