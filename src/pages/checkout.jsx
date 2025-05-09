@@ -51,12 +51,12 @@ export default function Checkout() {
         <div className="space-y-6">
           {items.map((item) => (
             <div key={item.sku} className="flex items-start gap-4 pb-6 border-b border-gray-200">
-              <div className="w-24 h-24">
-                <img 
-                  src={item.image}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-80 h-80">
+              <img 
+                src={item.image}
+                alt={item.name}
+                className="w-full h-full object-contain"
+              />
               </div>
               
               <div className="flex-grow">
