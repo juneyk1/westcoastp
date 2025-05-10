@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./header";
-import Appendices from "./Appendices";
-import { supabaseClient } from "../services/supabaseClient";
+import supabaseClient from "../services/supabaseClient";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -14,7 +13,7 @@ const Landing = () => {
       const { data, error } = await supabaseClient
         .from("products")
         .select("name, description, image");
-
+      
       if (error) {
         console.error("Error fetching products:", error);
       } else {
@@ -26,55 +25,37 @@ const Landing = () => {
   }, []);
 
   const handleProductClick = (name) => {
-    // Navigate to a product info page
+    // Navigate to a product info page 
     navigate(`/products/${name}`);
   };
 
   return (
-    <div className="landing-container">
+    <div>
       <Header />
       <div className="product-container">
-        {products.length > 0 ? (
-          products.map((product, index) => (
-            <div
-              key={product.id}
-              className={`product ${index === 1 ? "selected" : ""}`}
-              onClick={() => handleProductClick(product.name)}
-            >
-              {/* Render the product image */}
-              <img
-                src={product.image}
-                alt={product.name}
-                className="product-image"
-              />
-              {/* display more product details if needed:
-                  <h2>{product.name}</h2>
-                  <p>ASP: {product.ASP}</p>
-                  <p>Target: {product.target}</p>
-                  <p>{product.description}</p>
-              */}
-            </div>
-          ))
-        ) : (
-          <p>No products found.</p>
-        )}
+      {products.map((product, index) => (
+  <div
+    key={product.name} // use `product.name` if `product.id` is not available
+    className={`product ${index === 1 ? "selected" : ""}`}
+    onClick={() => handleProductClick(product.name)}
+  >
+    <img
+      src={product.image}
+      alt={product.name}
+      className="product-image"
+    />
+    <p className="product-name">{product.name}</p>
+  </div>
+))}
       </div>
-      <Appendices />
     </div>
   );
 };
 
 export default Landing;
 
-/* ----------------------------------
-   Dynamically inject your CSS styles
----------------------------------- */
+
 const styles = `
-  .landing-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;    
-  }
   .product-container {
     display: flex;
     justify-content: center;
@@ -82,7 +63,6 @@ const styles = `
     gap: 20px;
     overflow-x: auto;
     padding: 20px;
-    flex: 1; 
   }
   .product {
     width: 150px;
@@ -99,7 +79,15 @@ const styles = `
   }
   .selected {
     border: 3px solid blue;
+
   }
+  .product-name {
+    text-align: center;
+    margin-top: 8px;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
 `;
 
 const styleSheet = document.createElement("style");
