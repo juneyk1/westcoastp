@@ -56,11 +56,16 @@ export default function Checkout() {
 
   function handleQuantityChange(itemSku, newQuantity) {
     if (newQuantity < 0) return;
-    setItems(
-      items.map((item) =>
+
+    if (newQuantity === 0) {
+      // Remove the item from the cart
+      setItems(items.filter(item => item.sku !== itemSku));
+    } else {
+      // Update the quantity
+      setItems(items.map(item => 
         item.sku === itemSku ? { ...item, quantity: newQuantity } : item
-      )
-    );
+      ));
+    }
   }
 
   const handleCheckout = () => {
@@ -103,154 +108,69 @@ export default function Checkout() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <Header />
-      <h2 className="text-3xl font-medium mb-6">
-        Your Cart ({items.length} items)
-      </h2>
-
-      <div className="grid grid-cols-12 gap-8">
-        <div className="col-span-12 lg:col-span-8">
-          <div className="space-y-6">
-            {items.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-xl font-medium mb-4">Your cart is empty</p>
-                <button 
-                  onClick={() => navigate('/')}
-                  className="bg-black text-white px-6 py-2 rounded hover:bg-gray-800"
-                >
-                  Continue Shopping
-                </button>
+      <Header/>
+    <h2 className="text-3xl font-medium mb-6">Your Cart ({items.length} items)</h2>
+    
+    <div className="grid grid-cols-12 gap-8">
+      <div className="col-span-12 lg:col-span-8">
+        <div className="space-y-6">
+          {items.map((item) => (
+            <div key={item.sku} className="flex items-start gap-4 pb-6 border-b border-gray-200">
+              <div className="w-80 h-80">
+              <img 
+                src={item.image}
+                alt={item.name}
+                className="w-full h-full object-contain"
+              />
               </div>
-            ) : (
-              items.map((item) => (
-                <div
-                  key={item.sku}
-                  className="flex items-start gap-4 pb-6 border-b border-gray-200"
-                >
-                  <div className="w-24 h-24">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
+              
+              <div className="flex-grow">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium text-lg">{item.name}</h3>
+                    {item.description && (
+                      <p className="text-sm text-gray-600">{item.description}</p>
+                    )}
+                    {item.shippingDate && (
+                      <p className="text-sm text-green-800">
+                        {item.isShippingDateEstimated ? 'Estimated ' : ''}
+                        Ship Date: {item.shippingDate}
+                      </p>
+                    )}
+                    {item.seller && (
+                      <p className="text-sm text-gray-500">{item.seller}</p>
+                    )}
                   </div>
-
-                  <div className="flex-grow">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium text-lg">{item.name}</h3>
-                        {item.description && (
-                          <p className="text-sm text-gray-600">
-                            {item.description}
-                          </p>
-                        )}
-                        {item.shippingDate && (
-                          <p className="text-sm text-green-800">
-                            {item.isShippingDateEstimated ? "Estimated " : ""}
-                            Ship Date: {item.shippingDate}
-                          </p>
-                        )}
-                        {item.seller && (
-                          <p className="text-sm text-gray-500">{item.seller}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center">
-                        <strike className="text-lg font-medium mr-2 text-gray-500">
-                          ${item.ogPrice}
-                        </strike>
-                        <p className="text-lg font-medium">
-                          ${item.price.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center gap-2">
-                      <div className="inline-flex items-center border rounded">
-                        <button
-                          onClick={() =>
-                            handleQuantityChange(
-                              item.sku,
-                              Math.max(0, item.quantity - 1)
-                            )
-                          }
-                          className="px-2 py-1 hover:bg-gray-100"
-                        >
-                          −
-                        </button>
-                        <span className="px-4 py-1 border-x min-w-[40px] text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            handleQuantityChange(item.sku, item.quantity + 1)
-                          }
-                          className="px-2 py-1 hover:bg-gray-100"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
+                  <div className="flex items-center"> {/* items-center for vertical alignment */}
+                  <strike className="text-lg font-medium mr-2 text-gray-500">${item.ogPrice}</strike> {/* Add margin for spacing */}
+                  <p className="text-lg font-medium">${item.price.toFixed(2)}</p>
+                </div>
+                </div>
+                
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="inline-flex items-center border rounded">
+                    <button 
+                      onClick={() => handleQuantityChange(item.sku, Math.max(0, item.quantity - 1))}
+                      className="px-2 py-1 hover:bg-gray-100"
+                    >
+                      −
+                    </button>
+                    <span className="px-4 py-1 border-x min-w-[40px] text-center">
+                      {item.quantity}
+                    </span>
+                    <button 
+                      onClick={() => handleQuantityChange(item.sku, item.quantity + 1)}
+                      className="px-2 py-1 hover:bg-gray-100"
+                    >
+                    +  
+                    </button>
                   </div>
                 </div>
-              ))
-            )}
-
-            {/* Address Selection Section */}
-            {items.length > 0 && (
-              <div className="mt-8 space-y-6">
-                <div className="border rounded-lg p-6">
-                  <h3 className="text-lg font-medium mb-4">Shipping Address</h3>
-                  {shippingAddresses.length > 0 ? (
-                    <select
-                      value={selectedShippingAddress || ""}
-                      onChange={(e) => setSelectedShippingAddress(e.target.value)}
-                      className="w-full p-2 border rounded"
-                    >
-                      {shippingAddresses.map((address) => (
-                        <option key={address.id} value={address.id}>
-                          {address.first_name} {address.last_name} - {address.address_line1}, {address.city}, {address.state} {address.postal_code}
-                          {address.is_default && " (Default)"}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-gray-500">
-                      No shipping addresses saved. 
-                      <a href="/account/addresses" className="text-blue-500 ml-2">
-                        Add one now
-                      </a>
-                    </p>
-                  )}
-                </div>
-
-                <div className="border rounded-lg p-6">
-                  <h3 className="text-lg font-medium mb-4">Billing Address</h3>
-                  {billingAddresses.length > 0 ? (
-                    <select
-                      value={selectedBillingAddress || ""}
-                      onChange={(e) => setSelectedBillingAddress(e.target.value)}
-                      className="w-full p-2 border rounded"
-                    >
-                      {billingAddresses.map((address) => (
-                        <option key={address.id} value={address.id}>
-                          {address.first_name} {address.last_name} - {address.address_line1}, {address.city}, {address.state} {address.postal_code}
-                          {address.is_default && " (Default)"}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-gray-500">
-                      No billing addresses saved. 
-                      <a href="/account/addresses" className="text-blue-500 ml-2">
-                        Add one now
-                      </a>
-                    </p>
-                  )}
-                </div>
               </div>
-            )}
-          </div>
+            </div>
+          ))}
         </div>
+      </div>
 
         {items.length > 0 && (
           <div className="col-span-12 lg:col-span-4">

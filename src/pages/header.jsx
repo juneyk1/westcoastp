@@ -27,7 +27,7 @@ const Header = () => {
           <span onClick={handleAbtClick}>About</span>
           <span onClick={handleShopClick}>Shop</span>
         </div>
-        <div onClick={handleShopClick} className="logo">MADO</div>
+        <div onClick={handleShopClick} className="logo">WCPA</div>
         <div className="nav-right">
           <span onClick ={handleAccountClick}>Account</span>
           <span onClick={handleCartClick}>Bag</span>

@@ -124,7 +124,7 @@ const ProductInfo = () => {
       <Header />
       <div className="product-container">
         <div className="img-container">
-          <img src={product.image} alt={product.name} className="product-image" />
+          <img src={product.image} alt={product.name} className="product-info-image" />
         </div>
         <div className="product-more">
           <div className="product-details">
