@@ -11,20 +11,23 @@
 }
 
 .img-container {
-  width: 100%;  /* Make the container responsive */
-  height: auto;  /* Let the height adjust based on the width */
-  max-width: 600px;  /* Optional: This keeps the container from growing too large */
-  margin: 0 auto; /* Center the image container */
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 4 / 3; /* Maintains a consistent space for image */
+  margin: 0 auto;
   display: flex;
-  justify-content: center; /* Center the image horizontally */
-  align-items: center; /* Center the image vertically (if the height is larger) */
+  justify-content: center;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.product-image {
-  width: 100%;  /* Make the image take up 100% of its container's width */
-  height: auto;  /* Keep the image's aspect ratio */
-  object-fit: contain;  /* Ensures the image is fully visible and retains its aspect ratio */
-  background: #f5f5f5;  /* Fallback color for transparent/empty areas */
+.product-info-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .product-details {
