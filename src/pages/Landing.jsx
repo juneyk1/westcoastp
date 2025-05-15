@@ -91,7 +91,7 @@ const styles = `
   }
 
   .hero-section {
-    background: #e8f0fe;
+    background: linear-gradient(to right, #e0f7fa, #e8f0fe);
     padding: 60px 20px;
     text-align: center;
   }
@@ -153,7 +153,10 @@ const styles = `
     overflow: hidden;
     display: flex;
     flex-direction: column;
+
   }
+
+
 
   .product-card:hover {
     transform: translateY(-5px);
@@ -192,6 +195,14 @@ const styles = `
     border-radius: 6px;
     border: 1px solid #ccc;
     font-size: 16px;
+  }
+  .hero-section h1, .hero-section p {
+    animation: fadeIn 1s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 `;
 const styleSheet = document.createElement("style");
