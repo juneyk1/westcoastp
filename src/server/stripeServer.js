@@ -8,7 +8,6 @@ import PDFDocument from 'pdfkit';
 import nodemailer from 'nodemailer';
 import { generatePurchaseOrderPDF } from "../services/pdfTemplates.js";
 
-console.log('▶️ loaded apiServer.js');
 dotenv.config();
 
 const app = express();
@@ -79,7 +78,7 @@ app.get('/health', (req, res) => {
 
 
 app.post('/create-order', async (req, res) => {
-  const { userId, email, items } = req.body;
+  const { userId, email, items, shippingAddress, billingAddress } = req.body;
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const { data: order, error: orderErr } = await supabase
     .from('purchase_orders')
@@ -119,7 +118,7 @@ app.post('/create-order', async (req, res) => {
   if (itemsErr) console.error('Line-item insert error', itemsErr);
 
   // 4) Build PDF
-  const doc = generatePurchaseOrderPDF({ orderId, createdAt, items});
+  const doc = generatePurchaseOrderPDF({ orderId, createdAt, items, shippingAddress, billingAddress});
   const buffers = [];
   doc.on("data", (chunk) => buffers.push(chunk));
   doc.on('end', async () => {

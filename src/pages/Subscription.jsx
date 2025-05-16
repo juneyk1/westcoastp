@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
@@ -245,6 +245,9 @@ export default function Subscription() {
   const [subscriptionActive, setSubscriptionActive] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const location = useLocation();
+  const { shippingAddressId, billingAddressId } = location.state || {};
+
   useEffect(() => {
     if (!user) {
       navigate("/login");
@@ -275,7 +278,11 @@ export default function Subscription() {
 
   const handleSubscriptionSuccess = () => {
     setSubscriptionActive(true); // Update state on successful subscription
-    navigate("/checkout-response"); // Redirect
+    navigate("/place-order", { 
+      state: { 
+        shippingAddressId, billingAddressId
+      }
+    }) // Redirect
   };
 
   if (loading) {
@@ -284,7 +291,11 @@ export default function Subscription() {
 
   if (subscriptionActive) {
     //  Already Subscribed.
-    navigate("/place-order"); // Redirect to a success page or account page
+    navigate("/subscribe", { 
+      state: { 
+        shippingAddressId, billingAddressId
+      }
+    }) 
   }
 
   if (!clientSecret) {

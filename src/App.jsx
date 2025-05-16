@@ -26,7 +26,7 @@ const Account = lazy(() => import("./pages/Account"));
 const NoticesOfPrivacyPractices = lazy(() => import('./pages/Notices'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const CheckoutResponse = lazy(() => import("./pages/checkout-response"));
-const PlaceOrder = lazy(() => import("./pages/place-order"));
+const PlaceOrder = lazy(() => import("./pages/PlaceOrder"));
 
 // Error boundary component to catch rendering errors
 class ErrorBoundary extends React.Component {

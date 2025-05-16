@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import fs from "fs"; // only if you want to test locally with fs.createWriteStream
 
-export function generatePurchaseOrderPDF({ orderId, createdAt, items }) {
+export function generatePurchaseOrderPDF({ orderId, createdAt, items, shippingAddress, billingAddress }) {
   const doc = new PDFDocument({ margin: 50 });
   
   doc
@@ -16,30 +16,30 @@ export function generatePurchaseOrderPDF({ orderId, createdAt, items }) {
 
 //   // — ADDRESSES —
    const addressTop = 150;
-//   // shipping
-//   doc
-//     .fontSize(10)
-//     .text("Ship To:", 50, addressTop)
-//     .text(`${shippingAddress.first_name} ${shippingAddress.last_name}`, 50, addressTop + 15)
-//     .text(shippingAddress.address_line1, 50, addressTop + 30)
-//     .text(shippingAddress.address_line2 || "", 50, addressTop + 45)
-//     .text(`${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}`, 50, addressTop + 60);
+  // shipping
+  doc
+    .fontSize(10)
+    .text("Ship To:", 50, addressTop)
+    .text(`${shippingAddress.first_name} ${shippingAddress.last_name}`, 50, addressTop + 15)
+    .text(shippingAddress.address_line1, 50, addressTop + 30)
+    .text(shippingAddress.address_line2 || "", 50, addressTop + 45)
+    .text(`${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postal_code}`, 50, addressTop + 60);
 
-//   // billing
-//   doc
-//     .text("Bill To:", 300, addressTop)
-//     .text(`${billingAddress.first_name} ${billingAddress.last_name}`, 300, addressTop + 15)
-//     .text(billingAddress.address_line1, 300, addressTop + 30)
-//     .text(billingAddress.address_line2 || "", 300, addressTop + 45)
-//     .text(`${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}`, 300, addressTop + 60);
+  // billing
+  doc
+    .text("Bill To:", 300, addressTop)
+    .text(`${billingAddress.first_name} ${billingAddress.last_name}`, 300, addressTop + 15)
+    .text(billingAddress.address_line1, 300, addressTop + 30)
+    .text(billingAddress.address_line2 || "", 300, addressTop + 45)
+    .text(`${billingAddress.city}, ${billingAddress.state} ${billingAddress.postal_code}`, 300, addressTop + 60);
 
-//   // separator
-//   doc
-//     .moveTo(50, addressTop + 90)
-//     .lineTo(550, addressTop + 90)
-//     .dash(5, { space: 5 })
-//     .stroke()
-//     .undash();
+  // separator
+  doc
+    .moveTo(50, addressTop + 90)
+    .lineTo(550, addressTop + 90)
+    .dash(5, { space: 5 })
+    .stroke()
+    .undash();
 
   // — ITEMS TABLE —
   const tableTop = addressTop + 110;

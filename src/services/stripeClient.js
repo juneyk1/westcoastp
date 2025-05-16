@@ -29,7 +29,7 @@ export async function createSubscription({ paymentMethodId, priceId, customerInf
   return body;
 }
 
-export async function createOrder({ user, items }) {
+export async function createOrder({ user, items, shippingAddress, billingAddress }) {
 
   const res = await fetch(`${import.meta.env.VITE_API_URL}/create-order`, {
     method: "POST",
@@ -37,6 +37,8 @@ export async function createOrder({ user, items }) {
     body: JSON.stringify({
       userId: user.id,
       email: user.email,
+      shippingAddress,
+      billingAddress,
       items: items.map((i) => ({
         sku: i.sku,
         name: i.name,
