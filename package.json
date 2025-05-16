@@ -19,7 +19,6 @@
     "@mui/joy": "^5.0.0-beta.51",
     "@mui/material": "^6.4.4",
     "@mui/styled-engine-sc": "^6.4.3",
-    "@rollup/rollup-win32-x64-msvc": "^4.40.1",
     "@stripe/react-stripe-js": "^3.6.0",
     "@stripe/stripe-js": "^7.2.0",
     "@supabase/supabase-js": "^2.49.1",
