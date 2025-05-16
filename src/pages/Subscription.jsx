@@ -251,7 +251,7 @@ export default function Subscription() {
     (async () => {
       const { active } = await checkSubscription(user.id);
       if (active) {
-        navigate("/checkout");
+        navigate("/place-order");
       } else {
         const { clientSecret } = await createSetupIntent(
           import.meta.env.VITE_STRIPE_PRICE_ID

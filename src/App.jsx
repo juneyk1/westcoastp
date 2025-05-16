@@ -12,6 +12,7 @@ import Account from "./pages/Account";
 import NoticesOfPrivacyPractices from './pages/Notices';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CheckoutResponse from "./pages/checkout-response";
+import PlaceOrder from "./pages/PlaceOrder";
 import { AuthContextProvider } from "./contexts/AuthContexts";
 import { CartProvider } from "../src/contexts/CartContext";
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/notices" element={<NoticesOfPrivacyPractices />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/checkout-response" element={<CheckoutResponse />} />
+            <Route path="/place-order" element={<PlaceOrder />} />
             <Route path="/products/:productName" element={<ProductInfo />} />
           </Routes>
           </Router>
