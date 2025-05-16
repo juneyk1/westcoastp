@@ -83,9 +83,11 @@ const Landing = () => {
 
 // Your styles remain the same
 const styles = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
   body {
     margin: 0;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: #f6f9fc;
     color: #333;
   }
@@ -198,6 +200,7 @@ const styles = `
   }
   .hero-section h1, .hero-section p {
     animation: fadeIn 1s ease-out;
+    font-family: 'Merriweather', serif;
   }
   
   @keyframes fadeIn {
