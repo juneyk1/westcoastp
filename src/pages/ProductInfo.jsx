@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import Header from './header';
+import React, { useEffect, useState, useCallback } from "react";
+import Header from "./header";
 import "./ProductInfo.css";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
@@ -16,62 +16,109 @@ const ProductInfo = () => {
   const [cartMessage, setCartMessage] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const { data, error } = await supabaseClient
-          .from("products")
-          .select()
-          .eq("name", productName);
+  const fetchProduct = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: supabaseError } = await supabaseClient
+        .from("products")
+        .select("*")
+        .eq("name", productName)
+        .single();
 
-        if (error) throw error;
-        if (data.length === 0) throw new Error("Product not found");
-        setProduct(data[0]);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+      if (supabaseError) throw supabaseError;
+      if (!data) throw new Error("Product not found");
 
-    fetchProduct();
+      setProduct(data);
+    } catch (err) {
+      setError(err.message);
+      console.error("Failed to fetch product:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [productName]);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (!product) return <p>Product not found.</p>;
+  useEffect(() => {
+    fetchProduct();
+  }, [fetchProduct]);
 
-  const handleAddToCart = () => {
-    const existing = items.find((item) => item.sku === product.id); // Assuming `product.id` is unique
-    if (existing) {
-      setItems(
-        items.map((item) =>
-          item.sku === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+  const handleAddToCart = useCallback(() => {
+    if (!product) return;
+
+    setItems((prevItems) => {
+      const existingIndex = prevItems.findIndex(
+        (item) => item.sku === product.id
       );
-    } else {
-      setItems([
-        ...items,
-        {
-          sku: product.id,
-          name: product.name,
-          image: product.image,
-          description: product.description,
-          price: product.target,
-          ogPrice: product.ASP,
-          quantity: 1,
-          shippingDate: product.shippingDate || null,
-          seller: product.seller || null,
-        },
-      ]);
-    }
+
+      if (existingIndex >= 0) {
+        const updatedItems = [...prevItems];
+        updatedItems[existingIndex] = {
+          ...updatedItems[existingIndex],
+          quantity: updatedItems[existingIndex].quantity + 1,
+        };
+        return updatedItems;
+      } else {
+        return [
+          ...prevItems,
+          {
+            sku: product.id,
+            name: product.name,
+            image: product.image,
+            description: product.description,
+            price: product.target,
+            ogPrice: product.ASP,
+            quantity: 1,
+            shippingDate: product.shippingDate || null,
+            seller: product.seller || null,
+          },
+        ];
+      }
+    });
 
     setCartMessage("Product added to cart!");
-    setTimeout(() => setCartMessage(""), 3000); // clear message after 3s
-  };
+    const timer = setTimeout(() => setCartMessage(""), 3000);
+    return () => clearTimeout(timer); // Cleanup on unmount
+  }, [product, setItems]);
 
+  if (loading) {
+    return (
+      <div className="product-info-page">
+        <Header />
+        <div className="loading-container">
+          <p>Loading product details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="product-info-page">
+        <Header />
+        <div className="error-container">
+          <p>Error: {error}</p>
+          <button onClick={() => navigate(-1)} className="back-button">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="product-info-page">
+        <Header />
+        <div className="not-found-container">
+          <p>Product not found.</p>
+          <button onClick={() => navigate(-1)} className="back-button">
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="product-info-page">
       <Header />
