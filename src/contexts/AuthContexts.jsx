@@ -567,5 +567,5 @@ export const AuthProvider = ({ children }) => {
     setAddressCache
   ]);
 
-  return <>{children}</>;
+  return children;
 };
