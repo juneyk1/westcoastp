@@ -26,16 +26,18 @@ export const ProfileSection = () => {
           .from('profiles')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .order('updated_at', { ascending: false })
+          .limit(1);
 
         if (fetchError) throw fetchError;
         
         if (data) {
+          const profile = data[0];
           setFormData({
-            username: data.username || "",
-            full_name: data.full_name || "",
-            organization: data.organization || "",
-            organization_type: data.organization_type || "Private Practice"
+            username: profile.username || "",
+            full_name: profile.full_name || "",
+            organization: profile.organization || "",
+            organization_type: profile.organization_type || "Private Practice"
           });
         }
       } catch (err) {
@@ -69,8 +71,7 @@ export const ProfileSection = () => {
           organization: formData.organization,
           organization_type: formData.organization_type,
           updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id);
+        }, { onConflict: 'user_id' });
 
       if (updateError) throw updateError;
       setIsEditing(false);

@@ -125,7 +125,13 @@ export const SubscriptionSection = () => {
         .eq("user_id", user.id)
         .single();
         
-      if (supabaseError) throw supabaseError;
+      if (supabaseError) {
+        if (supabaseError.code === "PGRST116") {
+          setSubscription(null);
+          return;
+        }
+        throw supabaseError;
+      }
       
       setSubscription(data);
     } catch (err) {

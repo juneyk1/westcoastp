@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./header";
 import supabaseClient from "../services/supabaseClient";
+import Appendices from "./Appendices";
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -77,6 +78,7 @@ const Landing = () => {
           )}
         </div>
       </div>
+      <Appendices />
     </div>
   );
 };
