@@ -4,11 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-
-console.log("Module URL:", import.meta.url);
-console.log("Process.argv[1]:", process.argv[1]);
-const isMain = import.meta.url === `file://${process.argv[1]}`;
-console.log("Is this the main module?", isMain);;
+import PDFDocument from 'pdfkit';
+import nodemailer from 'nodemailer';
+import { generatePurchaseOrderPDF } from "../services/pdfTemplates.js";
 
 dotenv.config();
 
@@ -17,9 +15,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-app.use(cors())
+);
+const mailer = nodemailer.createTransport({
+  host:    process.env.SMTP_HOST,               // e.g. email-smtp.us-west-2.amazonaws.com
+  port:    +process.env.SMTP_PORT,              // 465 or 587
+  secure:  process.env.SMTP_PORT === '465',     // true for 465, false for other ports (STARTTLS)
+  auth: {
+    user: process.env.SMTP_USER,                // generated SMTP username
+    pass: process.env.SMTP_PASS,                // generated SMTP password
+  },
+});
 
+
+
+app.use(cors());
+app.use(express.json());
 
 app.post(
     "/webhook",
@@ -61,9 +71,81 @@ app.post(
       res.json({ received: true });
     }
   );
-  
 
-app.use(express.json());
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+
+app.post('/create-order', async (req, res) => {
+  const { userId, email, items, shippingAddress, billingAddress } = req.body;
+  const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const { data: order, error: orderErr } = await supabase
+    .from('purchase_orders')
+    .insert(
+      [{ user_id: userId, total }],
+      { returning: "representation" }
+    )
+    .single();
+  
+  if (orderErr) return res.status(500).json({ error: orderErr.message });
+  
+  const { data: [orderData], error: selectError } = await supabase
+  .from("purchase_orders")
+  .select("*")
+  .eq("user_id", userId)
+  .order("created_at", { ascending: false })
+  .limit(1);
+  
+  if (selectError) throw selectError;
+  if (!orderData) {
+    return res.status(404).json({ error: "Order not found" });
+  }
+  const orderId = orderData.id;
+  const createdAt = orderData.createdAt
+  
+  const lineItems = items.map(i => ({
+    order_id:      orderId,
+    product_sku:   i.sku,
+    product_name:  i.name,
+    unit_price:    i.price,
+    quantity:      i.quantity
+  }));
+
+  const { error: itemsErr } = await supabase
+    .from('purchase_order_items')
+    .insert(lineItems);
+  if (itemsErr) console.error('Line-item insert error', itemsErr);
+
+  // 4) Build PDF
+  const doc = generatePurchaseOrderPDF({ orderId, createdAt, items, shippingAddress, billingAddress});
+  const buffers = [];
+  doc.on("data", (chunk) => buffers.push(chunk));
+  doc.on('end', async () => {
+    const pdfBuffer = Buffer.concat(buffers);
+
+    // 5) Send email with PDF attachment
+    try {
+      await mailer.sendMail({
+        from: `"WCPA" <${process.env.SMTP_EMAIL}>`,
+        to: email,
+        subject: `Your Purchase Order #${orderId}`,
+        text: `Thank you for your order! Please find your Purchase Order attached.`,
+        attachments: [{
+          filename: `PO-${orderId}.pdf`,
+          content: pdfBuffer
+        }]
+      });
+      res.json({ orderId: orderId });
+    } catch (mailErr) {
+      console.error('Email send error', mailErr);
+      res.status(500).json({ error: 'Order created but failed to send email.' });
+    }
+  });
+  doc.end();
+
+});
+
 
 app.post("/check-subscription", async (req, res) => {
     const { userId } = req.body;
@@ -135,11 +217,9 @@ app.post("/create-subscription", async (req, res) => {
     } catch (e) {
       res.status(400).json({ error: e.message });
     }
-  });
+});
   
-  console.log("⏳ About to start server…");
-  app.listen(4242, () =>
-    console.log("Stripe server listening")
-  );
-console.log("Open handles:", process._getActiveHandles().length);
+app.listen(4248, () => {
+  console.log('Server listening on 4248');
+});
 process.stdin.resume();

@@ -28,3 +28,29 @@ export async function createSubscription({ paymentMethodId, priceId, customerInf
   if (!res.ok) throw new Error(body.error || 'Subscription failed');
   return body;
 }
+
+export async function createOrder({ user, items, shippingAddress, billingAddress }) {
+
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/create-order`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: user.id,
+      email: user.email,
+      shippingAddress,
+      billingAddress,
+      items: items.map((i) => ({
+        sku: i.sku,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+      })),
+    }),
+  });
+
+  const body = await res.json();
+
+  if (!res.ok) throw new Error(body.error)
+
+  return body;
+}

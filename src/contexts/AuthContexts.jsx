@@ -1,9 +1,8 @@
 import { atom, useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import supabaseClient from "../services/supabaseClient";
-import { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect, useMemo, useCallback } from "react";
 import { debounce } from "lodash";
-import { useCallback } from "react";
 
 // Create a storage atom for caching addresses with TTL
 const addressCacheAtom = atomWithStorage('address-cache', {
