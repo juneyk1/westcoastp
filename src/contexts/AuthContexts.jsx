@@ -181,7 +181,7 @@ export const useAddressActions = () => {
           .from("addresses")
           .insert({ ...addressData, user_id: user.id })
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) throw error;
 

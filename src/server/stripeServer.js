@@ -117,14 +117,12 @@ app.post('/create-order', async (req, res) => {
     .insert(lineItems);
   if (itemsErr) console.error('Line-item insert error', itemsErr);
 
-  // 4) Build PDF
   const doc = generatePurchaseOrderPDF({ orderId, createdAt, items, shippingAddress, billingAddress});
   const buffers = [];
   doc.on("data", (chunk) => buffers.push(chunk));
   doc.on('end', async () => {
     const pdfBuffer = Buffer.concat(buffers);
 
-    // 5) Send email with PDF attachment
     try {
       await mailer.sendMail({
         from: `"WCPA" <${process.env.SMTP_EMAIL}>`,

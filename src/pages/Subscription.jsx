@@ -253,12 +253,13 @@ export default function Subscription() {
       navigate("/login");
       return;
     }
-
+  
     const checkAndSetupSubscription = async () => {
       setLoading(true);
       try {
         const { active } = await checkSubscription(user.id);
         setSubscriptionActive(active);
+  
         if (!active) {
           const { clientSecret } = await createSetupIntent(
             import.meta.env.VITE_STRIPE_PRICE_ID
@@ -267,14 +268,23 @@ export default function Subscription() {
         }
       } catch (error) {
         console.error("Error checking/setting up subscription:", error);
-        navigate("/error"); // We might want a specific error route
+        navigate("/error");
       } finally {
         setLoading(false);
       }
     };
-
+  
     checkAndSetupSubscription();
   }, [user, navigate]);
+  
+  useEffect(() => {
+    if (subscriptionActive) {
+      navigate("/place-order", {
+        state: { shippingAddressId, billingAddressId },
+      });
+    }
+  }, [subscriptionActive, navigate, shippingAddressId, billingAddressId]);
+  
 
   const handleSubscriptionSuccess = () => {
     setSubscriptionActive(true); // Update state on successful subscription
@@ -287,15 +297,6 @@ export default function Subscription() {
 
   if (loading) {
     return <p className="text-center mt-8">Loading payment form…</p>; // Or a more sophisticated loading indicator
-  }
-
-  if (subscriptionActive) {
-    //  Already Subscribed.
-    navigate("/subscribe", { 
-      state: { 
-        shippingAddressId, billingAddressId
-      }
-    }) 
   }
 
   if (!clientSecret) {

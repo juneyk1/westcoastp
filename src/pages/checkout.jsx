@@ -31,10 +31,10 @@ export default function Checkout() {
   // Set default addresses when they're available
   useEffect(() => {
     if (defaultShippingAddress) {
-      setSelectedShippingAddress(defaultShippingAddress.id);
+      setSelectedShippingAddress(String(defaultShippingAddress.id));
     }
     if (defaultBillingAddress) {
-      setSelectedBillingAddress(defaultBillingAddress.id);
+      setSelectedBillingAddress(String(defaultBillingAddress.id));
     }
   }, [defaultShippingAddress, defaultBillingAddress]);
 
@@ -105,7 +105,12 @@ export default function Checkout() {
   const billingAddresses = addresses.filter(addr => 
     addr.type === 'billing' || addr.type === 'both'
   );
-
+  console.log({
+    selectedShippingAddress,
+    selectedBillingAddress,
+    isProcessing,
+    canCheckout: !!selectedShippingAddress && !!selectedBillingAddress && !isProcessing
+  });
   return (
     <div className="flex flex-col min-h-screen">
       <Header/>
@@ -191,9 +196,11 @@ export default function Checkout() {
                     <h3 className="text-lg font-medium mb-4">Shipping Address</h3>
                     {shippingAddresses.length > 0 ? (
                       <select
-                        value={selectedShippingAddress || ""}
-                        onChange={(e) => setSelectedShippingAddress(e.target.value)}
-                        className="w-full p-2 border rounded"
+                        value={selectedShippingAddress ?? shippingAddresses[0]?.id ?? ""}
+                        onChange={(e) => {
+                          console.log("shipping selected", e.target.value);
+                          setSelectedShippingAddress(e.target.value);
+                        }}
                       >
                         {shippingAddresses.map((address) => (
                           <option key={address.id} value={address.id}>
@@ -217,9 +224,11 @@ export default function Checkout() {
                     <h3 className="text-lg font-medium mb-4">Billing Address</h3>
                     {billingAddresses.length > 0 ? (
                       <select
-                        value={selectedBillingAddress || ""}
-                        onChange={(e) => setSelectedBillingAddress(e.target.value)}
-                        className="w-full p-2 border rounded"
+                        value={selectedBillingAddress ?? billingAddresses[0]?.id ?? ""}
+                        onChange={(e) => {
+                          console.log("billing selected", e.target.value);
+                          setSelectedBillingAddress(e.target.value);
+                        }}
                       >
                         {billingAddresses.map((address) => (
                           <option key={address.id} value={address.id}>

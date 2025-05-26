@@ -585,6 +585,8 @@ const Account = () => {
             setDefaultAddress={setDefaultAddress}
             isRemoving={isRemoving}
             isSettingDefault={isSettingDefault}
+            setIsSettingDefault={setIsSettingDefault}
+            setIsRemoving={setIsRemoving}
           />
 
           <AddressList 
@@ -595,6 +597,8 @@ const Account = () => {
             setDefaultAddress={setDefaultAddress}
             isRemoving={isRemoving}
             isSettingDefault={isSettingDefault}
+            setIsSettingDefault={setIsSettingDefault}
+            setIsRemoving={setIsRemoving}
             isBilling
           />
         </div>
@@ -641,7 +645,10 @@ const AddressList = ({
   setDefaultAddress,
   isRemoving,
   isSettingDefault,
+  setIsRemoving,
+  setIsSettingDefault,
   isBilling = false
+  
 }) => (
   <div className="mb-8">
     <h4 className="text-lg font-medium mb-4">{title}</h4>
@@ -659,6 +666,8 @@ const AddressList = ({
             isRemoving={isRemoving}
             isSettingDefault={isSettingDefault}
             isBilling={isBilling}
+            setIsSettingDefault={setIsSettingDefault}
+            setIsRemoving={setIsRemoving}
           />
         ))}
       </div>
@@ -674,7 +683,9 @@ const AddressCard = ({
   setDefaultAddress,
   isRemoving,
   isSettingDefault,
-  isBilling
+  isBilling,
+  setIsRemoving,
+  setIsSettingDefault
 }) => {
   const handleRemove = async () => {
     setIsRemoving(address.id);

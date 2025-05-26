@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Header from "../pages/header";
 import { useCart } from "../contexts/CartContext";
-import { UserAuth } from "../contexts/AuthContexts";
+import { useUserAuth } from "../contexts/AuthContexts";
 import {
     createOrder
 } from "../services/stripeClient";
@@ -12,7 +12,7 @@ export default function PlaceOrder() {
   const navigate = useNavigate();
   const location = useLocation();
   const { items, setItems } = useCart();
-  const { user, addresses, isLoading: authLoading } = UserAuth();
+  const { user, addresses, isLoading: authLoading } = useUserAuth();
 
   // pulled from navigation state
   const { shippingAddressId, billingAddressId } = location.state || {};
