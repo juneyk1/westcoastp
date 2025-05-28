@@ -80,9 +80,10 @@ export default function PlaceOrder() {
     return <div className="max-w-6xl mx-auto p-4">Loading…</div>;
   }
     
-  return (
+    return (
+    <div>
+     <Header />
     <div className="max-w-6xl mx-auto">
-      <Header />
       <h2 className="text-3xl font-medium my-6">Review & Place Order</h2>
 
       <div className="grid grid-cols-12 gap-8">
@@ -162,6 +163,7 @@ export default function PlaceOrder() {
           </button>
         </div>
       </div>
-    </div>
+        </div>
+        </div>
   );
 }

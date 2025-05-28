@@ -6,7 +6,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import PDFDocument from 'pdfkit';
 import nodemailer from 'nodemailer';
-import { generatePurchaseOrderPDF } from "../services/pdfTemplates.js";
+import { renderToBuffer } from "@react-pdf/renderer";
+import PurchaseOrderPDF from "../services/PurchaseOrderPDF.js";
+import React from "react";
 
 dotenv.config();
 
@@ -102,7 +104,7 @@ app.post('/create-order', async (req, res) => {
     return res.status(404).json({ error: "Order not found" });
   }
   const orderId = orderData.id;
-  const createdAt = orderData.createdAt
+  const createdAt = orderData.created_at;
   
   const lineItems = items.map(i => ({
     order_id:      orderId,
@@ -117,11 +119,19 @@ app.post('/create-order', async (req, res) => {
     .insert(lineItems);
   if (itemsErr) console.error('Line-item insert error', itemsErr);
 
-  const doc = generatePurchaseOrderPDF({ orderId, createdAt, items, shippingAddress, billingAddress});
+  const doc = new PDFDocument({ margin: 50 });
   const buffers = [];
   doc.on("data", (chunk) => buffers.push(chunk));
   doc.on('end', async () => {
-    const pdfBuffer = Buffer.concat(buffers);
+    const pdfBuffer = await renderToBuffer(
+      React.createElement(PurchaseOrderPDF, {
+        orderId,
+        createdAt,
+        items,
+        shippingAddress,
+        billingAddress
+      })
+    );
 
     try {
       await mailer.sendMail({

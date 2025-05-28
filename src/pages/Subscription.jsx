@@ -115,7 +115,7 @@ function SubscriptionForm({ clientSecret, onSubscriptionSuccess }) {
       <div className="bg-white rounded-2xl p-6 shadow-md text-center mb-10">
         <h1 className="text-3xl font-semibold">Your Subscription</h1>
         <p className="text-4xl font-extrabold mt-4">
-          $100<span className="text-2xl font-medium">/mo</span>
+          $1000<span className="text-2xl font-medium">/mo</span>
         </p>
         <p className="mt-2 text-gray-600">
           Unlock member pricing on all medical devices
