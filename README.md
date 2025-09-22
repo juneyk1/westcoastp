@@ -14,14 +14,18 @@ This project is a full-stack e-store built to help private practice doctors acce
 ## Installation and Setup
 Follow these steps to run the code:
 1. Add an .env to root: \
-   `STRIPE_SECRET_KEY=sk_test_************* \
-   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_************* \
-   VITE_STRIPE_PRICE_ID=price_************* \
-   VITE_SUPABASE_URL=https://xxxx.supabase.co \
-   VITE_SUPABASE_ANON_KEY=******...` \
-2. Run `node src/server/stripeServer.js`.
-3. Install dependencies: \
+   `STRIPE_SECRET_KEY=sk_test_*************
+
+   VITE_STRIPE_PUBLISHABLE_KEY=pk_test_************* 
+
+   VITE_STRIPE_PRICE_ID=price_************* 
+
+   VITE_SUPABASE_URL=https://xxxx.supabase.co 
+
+   VITE_SUPABASE_ANON_KEY=******...` 
+3. Run `node src/server/stripeServer.js`.
+4. Install dependencies: \
    `npm install`
-4. Start frontend: \
+5. Start frontend: \
    `npm run dev`
-5. Ensure Stripe is logged into and events are listening.
+6. Ensure Stripe is logged into and events are listening.
