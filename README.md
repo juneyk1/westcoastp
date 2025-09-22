@@ -5,10 +5,10 @@
 This project is a full-stack e-store built to help private practice doctors access medical devices at reduced costs by pooling purchasing power. The platform provides a secure, scalable, and user-friendly interface for browsing and purchasing medical devices.
 
 ## Tech Stack
-**Frontend:** React, JavaScript, Custom UI/UX
-**Backend:** API Routes, Node.js/Express (if applicable)
-**Database:** PostgreSQL (via Supabase)
-**Authentication:** Supabase Auth
+**Frontend:** React, JavaScript, Custom UI/UX \
+**Backend:** API Routes, Node.js/Express \
+**Database:** PostgreSQL (via Supabase) \
+**Authentication:** Supabase Auth \
 **Payments:** Stripe API
 
 ## Installation and Setup
